@@ -163,7 +163,6 @@ class BNReasoner:
 
         return graph
 
-
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
     cpts = bn.bn.get_all_cpts()
