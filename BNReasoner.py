@@ -31,7 +31,7 @@ class BNReasoner:
             self.bn = net
     
     def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
-        """ Checks if there is a path from x to y in a given graph.
+        """ Checks (recursively) if there is a path from x to y in a given graph.
 
         Args:
             graph (nx.DiGraph): The graph to check.
@@ -42,24 +42,38 @@ class BNReasoner:
         Returns:
             bool: True if there is a path from x to y, False otherwise.
         """
-        # Check if there is a path from x to y
+        # Cycle through all predecessors and successors of x
         for n in list(graph.neighbors(x)) + list(graph.predecessors(x)):
             if n in y:
                 return True
             if n in visited:
+                # If we already visited this node, then skip it
                 continue
             else:
+                # Otherwise add it to the visited list and check if there is a path from n to y
                 visited.append(n)
                 if self.has_path(graph, n, y, visited):
                     return True
         return False
 
-    def d_sep(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str]) \
-        -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
+    def _prune(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str])\
+       -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
+        """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
+            and removing all edges that are outgoing from z.
+
+        Args:
+            graph (nx.DiGraph): An acyclic directed graph representing the BN.
+            x (List[str]): A list containing all nodes in x.
+            y (List[str]): A list containing all nodes in y.
+            z (List[str]): A list containing all nodes in z.
+
+        Returns:
+            Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
+        """
         prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
         # Remove all leaf nodes that are not in x, y or z
         graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
-        # Remove all edges that are not in z
+        # Remove all edges that are outgoing from z
         graph.remove_edges_from(list(graph.edges(z)))
         return list(prev_n), list(prev_e)
 
@@ -67,9 +81,9 @@ class BNReasoner:
         """ Checks whether x is d-separated from y given z.
 
         Args:
-            x (Union[str, List[str]]): The specified variable x.
-            y (Union[str, List[str]]): The specified variable y.
-            z (Union[str, List[str]]): Either a single variable or a list of variables.
+            x (Union[str, List[str]]): The specified variable x or a list of variables.
+            y (Union[str, List[str]]): The specified variable y or a list of variables.
+            z (Union[str, List[str]]): The specified variable z or a list of variables.
 
         Returns:
             bool: True if x is d-separated from y given z, False otherwise.
@@ -80,12 +94,25 @@ class BNReasoner:
         graph = deepcopy(self.bn.structure)
 
         # Apply the d-separation algorithm exhaustively
-        prev_nodes, prev_edges = self.d_sep(graph, x, y, z)
+        prev_nodes, prev_edges = self._prune(graph, x, y, z)
         while list(graph.nodes) != prev_nodes and list(graph.edges) != prev_edges:
-            prev_nodes, prev_edges = self.d_sep(graph, x, y, z)
+            prev_nodes, prev_edges = self._prune(graph, x, y, z)
         
-        # Check if there is a path from x to y
+        # x is d-separated from y given z if there is no path from x to y in the pruned graph
         return not any(self.has_path(graph, u, y, [u]) for u in x)
+    
+    def independent(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
+        """ Checks whether x is independent from y given z.
+
+        Args:
+            x (Union[str, List[str]]): The specified variable x or a list of variables.
+            y (Union[str, List[str]]): The specified variable y or a list of variables.
+            z (Union[str, List[str]]): The specified variable z or a list of variables.
+
+        Returns:
+            bool: True if x is independent from y given z, False otherwise.
+        """
+        return self.d_separated(x, y, z)
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
