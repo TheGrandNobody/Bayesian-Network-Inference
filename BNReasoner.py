@@ -1,6 +1,7 @@
 from typing import Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
+import pandas as pd
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -29,37 +30,37 @@ class BNReasoner:
             self.bn.load_from_bifxml(net)
         else:
             self.bn = net
-    
-    def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
-        """ Checks (recursively) if there is a path from x to y in a given graph.
 
+    def marginalization(self, variable: str, cpt: pd.DataFrame):
+        """Sums out a given variable, given the joint probability distribution with other variables.
         Args:
-            graph (nx.DiGraph): The graph to check.
-            x (str): The specified variable x.
-            y (List[str]): The specified variable y.
-            visited (List[str]): A list of visited nodes.
+            variable (str): a string indicating the variable that needs to be summed-out
+            cpt (pd.DataFrame): A cpt containing the variable that needs to be summed-out
 
         Returns:
-            bool: True if there is a path from x to y, False otherwise.
+            pd.DataFrame: cpt where variable is summed-out
         """
-        # Cycle through all predecessors and successors of x
-        for n in list(graph.neighbors(x)) + list(graph.predecessors(x)):
-            if n in y:
-                return True
-            if n in visited:
-                # If we already visited this node, then skip it
-                continue
-            else:
-                # Otherwise add it to the visited list and check if there is a path from n to y
-                visited.append(n)
-                if self.has_path(graph, n, y, visited):
-                    return True
-        return False
 
-    def _prune(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str])\
-       -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
-        """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
-            and removing all edges that are outgoing from z.
+        # get other variables 
+        variables = cpt.columns.tolist()
+        variables = list(filter(lambda var: var != "p" and var != variable, variables))
+
+        # make new cpt and return
+        new_cpt = cpt.groupby(variables)["p"].sum()
+
+        return new_cpt
+
+    def ordering(self, heuristic: str):
+        """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
+
+        Args:
+            cpt (pd.DataFrame): _description_
+            heuristic (str): _description_
+        """
+        print(self.bn.get_interaction_graph())
+        
+    def check_single(self, variable: Union[str, List[str]]) -> List[str]:
+        """ Checks if the variable is a single variable and returns a list containing the variable if it is.
 
         Args:
             graph (nx.DiGraph): An acyclic directed graph representing the BN.
@@ -117,7 +118,16 @@ class BNReasoner:
     def f_multiply(self, f, g):
         
 
+    def edge_prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+        graph = deepcopy(self.bn.structure)
+        if evidence in graph.edges():
+            graph.remove_node(evidence)
+            print(graph.edges)
+
+        return graph
+
+
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    print(bn.d_separated("Rain?", "Sprinkler?", "Winter?"))
-    #bn.bn.draw_structure()
+    bn.ordering("min-fill")
+
