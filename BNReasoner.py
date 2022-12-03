@@ -1,9 +1,21 @@
-from typing import Union, List
-from BayesNet import BayesNet
+from typing import Union, List, Tuple
+from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
 
+# Utility functions 
+def check_single(variable: Union[str, List[str]]) -> List[str]:
+    """ Checks if the variable is a single variable and returns a list containing the variable if it is.
 
+    Args:
+        variable (Union[str, List[str]]): Either a single variable or a list of variables.
+
+    Returns:
+        List[str]: A list containing the variable, otherwise the variable list.
+    """
+    return variable if type(variable) == list else [variable]
+
+# BNReasoner class
 class BNReasoner:
     def __init__(self, net: Union[str, BayesNet]) -> None:
         """ Initializes a BNReasoner object.
@@ -51,32 +63,66 @@ class BNReasoner:
         """ Checks if the variable is a single variable and returns a list containing the variable if it is.
 
         Args:
-            variable (Union[str, List[str]]): Either a single variable or a list of variables.
+            graph (nx.DiGraph): An acyclic directed graph representing the BN.
+            x (List[str]): A list containing all nodes in x.
+            y (List[str]): A list containing all nodes in y.
+            z (List[str]): A list containing all nodes in z.
 
         Returns:
-            List[str]: A list containing the variable, otherwise the variable list.
+            Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
         """
-        return variable if type(variable) == list else [variable]
+        prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
+        # Remove all leaf nodes that are not in x, y or z
+        graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
+        # Remove all edges that are outgoing from z
+        graph.remove_edges_from(list(graph.edges(z)))
+        return list(prev_n), list(prev_e)
 
     def d_separated(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
         """ Checks whether x is d-separated from y given z.
 
         Args:
-            x (Union[str, List[str]]): The specified variable x.
-            y (Union[str, List[str]]): The specified variable y.
-            z (Union[str, List[str]]): Either a single variable or a list of variables.
+            x (Union[str, List[str]]): The specified variable x or a list of variables.
+            y (Union[str, List[str]]): The specified variable y or a list of variables.
+            z (Union[str, List[str]]): The specified variable z or a list of variables.
 
         Returns:
             bool: True if x is d-separated from y given z, False otherwise.
         """
         # Check if z is a list or a single variable
-        x, y, z = self.check_single(x), self.check_single(y), self.check_single(z)
-        edges = [e for e in self.bn.structure.edges if e not in self.bn.structure.edges[z]]
+        x, y, z = check_single(x), check_single(y), check_single(z)
+        # Create a copy of the BN we can use for pruning
+        graph = deepcopy(self.bn.structure)
 
-        nodes = [n for n in self.bn.structure.nodes if n not in x + y + z and self.bn.structure.neighbors(n) == []]
-        edges = [e for e in self.bn.structure.edges if e not in self.bn.structure.edges[z]]
-            
-      
+        # Apply the d-separation algorithm exhaustively
+        prev_nodes, prev_edges = self._prune(graph, x, y, z)
+        while list(graph.nodes) != prev_nodes and list(graph.edges) != prev_edges:
+            prev_nodes, prev_edges = self._prune(graph, x, y, z)
+        
+        # x is d-separated from y given z if there is no path from x to y in the pruned graph
+        return not any(self.has_path(graph, u, y, [u]) for u in x)
+    
+    def independent(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
+        """ Checks whether x is independent from y given z.
+
+        Args:
+            x (Union[str, List[str]]): The specified variable x or a list of variables.
+            y (Union[str, List[str]]): The specified variable y or a list of variables.
+            z (Union[str, List[str]]): The specified variable z or a list of variables.
+
+        Returns:
+            bool: True if x is independent from y given z, False otherwise.
+        """
+        return self.d_separated(x, y, z)
+
+    def edge_prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+        graph = deepcopy(self.bn.structure)
+        if evidence in graph.edges():
+            graph.remove_node(evidence)
+            print(graph.edges)
+
+        return graph
+
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
