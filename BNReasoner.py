@@ -58,25 +58,48 @@ class BNReasoner:
             heuristic (str): _description_
         """
         print(self.bn.get_interaction_graph())
-        
-    def check_single(self, variable: Union[str, List[str]]) -> List[str]:
-        """ Checks if the variable is a single variable and returns a list containing the variable if it is.
 
+    def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
+        """ Checks (recursively) if there is a path from x to any node in y in a given graph.
         Args:
-            graph (nx.DiGraph): An acyclic directed graph representing the BN.
-            x (List[str]): A list containing all nodes in x.
-            y (List[str]): A list containing all nodes in y.
-            z (List[str]): A list containing all nodes in z.
-
+            graph (nx.DiGraph): The graph to check.
+            x (str): The starting node.
+            y (List[str]): The target node(s).
         Returns:
-            Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
+            bool: True if there is a path from x to y, False otherwise.
         """
-        prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
-        # Remove all leaf nodes that are not in x, y or z
-        graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
-        # Remove all edges that are outgoing from z
-        graph.remove_edges_from(list(graph.edges(z)))
-        return list(prev_n), list(prev_e)
+        # Cycle through all predecessors and successors of x
+        for n in list(graph.neighbors(x)) + list(graph.predecessors(x)):
+            if n in y:
+                return True
+            if n in visited:
+                # If we already visited this node, then skip it
+                continue
+            else:
+                # Otherwise add it to the visited list and check if there is a path from n to y
+                visited.append(n)
+                if self.has_path(graph, n, y, visited):
+                    return True
+        return False  
+
+    def _prune(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str])\
+          -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
+          """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
+              and removing all edges that are outgoing from z.
+          Args:
+              graph (nx.DiGraph): An acyclic directed graph representing the BN.
+              x (List[str]): A list containing all nodes in x.
+              y (List[str]): A list containing all nodes in y.
+              z (List[str]): A list containing all nodes in z.
+          Returns:
+              Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
+          """
+          prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
+          # Remove all leaf nodes that are not in x, y or z
+          graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
+          # Remove all edges that are outgoing from z
+          graph.remove_edges_from(list(graph.edges(z)))
+          return list(prev_n), list(prev_e)
 
     def d_separated(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
         """ Checks whether x is d-separated from y given z.
