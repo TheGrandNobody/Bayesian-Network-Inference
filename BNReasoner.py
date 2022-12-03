@@ -31,24 +31,21 @@ class BNReasoner:
         else:
             self.bn = net
 
-    def marginalization(self, variable: str, cpt: pd.DataFrame):
-        """Sums out a given variable, given the joint probability distribution with other variables.
+    def marginalize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+        """ Sums out a given variable, given the joint probability distribution with other variables.
         Args:
-            variable (str): a string indicating the variable that needs to be summed-out
-            cpt (pd.DataFrame): A cpt containing the variable that needs to be summed-out
+            variable (str): A string indicating the variable that needs to be summed-out
+            f1 (pd.DataFrame): A factor containing the variable that needs to be summed-out
 
         Returns:
-            pd.DataFrame: cpt where variable is summed-out
+            pd.DataFrame: A conditional probability table with the specified variable summed-out
         """
-
         # get other variables 
-        variables = cpt.columns.tolist()
+        variables = f1.columns.tolist()
         variables = list(filter(lambda var: var != "p" and var != variable, variables))
 
-        # make new cpt and return
-        new_cpt = cpt.groupby(variables)["p"].sum()
-
-        return new_cpt
+        # Compute the new cpt and return it
+        return f1.groupby(variables)["p"].sum()
 
     def ordering(self, heuristic: str):
         """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
@@ -137,8 +134,28 @@ class BNReasoner:
             bool: True if x is independent from y given z, False otherwise.
         """
         return self.d_separated(x, y, z)
+    
+    def f_multiply(self, f1: pd.DataFrame, f2: pd.DataFrame) -> pd.DataFrame:
+        """ Multiplies two given factors together.
 
-    def edge_prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+        Args:
+            f1 (pd.DataFrame): The first specified factor.
+            f2 (pd.DataFrame): The second specified factor.
+
+        Returns:
+            pd.DataFrame: The resulting factor from the product of f1 and f2.
+        """
+        def multiply(var: List, r1: pd.Series, r2: pd.Series) -> float:
+            var.append(r1.drop("p").values.tolist())
+            return r1["p"] * r2["p"]
+        new_f1 = []
+        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)]for i in range(len(f2.drop(columns="p").columns))]
+        p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
+        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(p=p, **dict(zip(f2.drop(columns="p"), new_f2)))
+
+        
+
+    def edge_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
         if evidence in graph.edges():
             graph.remove_node(evidence)
@@ -149,5 +166,9 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    bn.ordering("min-fill")
+    cpts = bn.bn.get_all_cpts()
+    print(cpts['Rain?'])
+    print(cpts['Wet Grass?'])
+    print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
+
 
