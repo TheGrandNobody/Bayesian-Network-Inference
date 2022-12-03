@@ -113,6 +113,9 @@ class BNReasoner:
             bool: True if x is independent from y given z, False otherwise.
         """
         return self.d_separated(x, y, z)
+    
+    def f_multiply(self, f, g):
+        
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
