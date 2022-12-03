@@ -1,6 +1,7 @@
 from typing import Union, List
 from BayesNet import BayesNet
 from copy import deepcopy
+import pandas as pd
 
 
 class BNReasoner:
@@ -17,7 +18,35 @@ class BNReasoner:
             self.bn.load_from_bifxml(net)
         else:
             self.bn = net
-    
+
+    def marginalization(self, variable: str, cpt: pd.DataFrame):
+        """Sums out a given variable, given the joint probability distribution with other variables.
+        Args:
+            variable (str): a string indicating the variable that needs to be summed-out
+            cpt (pd.DataFrame): A cpt containing the variable that needs to be summed-out
+
+        Returns:
+            pd.DataFrame: cpt where variable is summed-out
+        """
+
+        # get other variables 
+        variables = cpt.columns.tolist()
+        variables = list(filter(lambda var: var != "p" and var != variable, variables))
+
+        # make new cpt and return
+        new_cpt = cpt.groupby(variables)["p"].sum()
+
+        return new_cpt
+
+    def ordering(self, heuristic: str):
+        """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
+
+        Args:
+            cpt (pd.DataFrame): _description_
+            heuristic (str): _description_
+        """
+        print(self.bn.get_interaction_graph())
+        
     def check_single(self, variable: Union[str, List[str]]) -> List[str]:
         """ Checks if the variable is a single variable and returns a list containing the variable if it is.
 
@@ -51,4 +80,5 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
+    bn.ordering("min-fill")
 
