@@ -87,7 +87,18 @@ class BNReasoner:
         # Check if there is a path from x to y
         return not any(self.has_path(graph, u, y, [u]) for u in x)
 
+    def edge_prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+        graph = deepcopy(self.bn.structure)
+        if evidence in graph.edges():
+            graph.remove_node(evidence)
+            print(graph.edges)
+
+        return graph
+
+
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
     print(bn.d_separated("Rain?", "Sprinkler?", "Winter?"))
     #bn.bn.draw_structure()
+    #bn.edge_prune("Rain?", "Winter?")
+    
