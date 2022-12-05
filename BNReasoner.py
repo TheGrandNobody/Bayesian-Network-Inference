@@ -155,33 +155,25 @@ class BNReasoner:
 
         
 
-    def prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
-        # delete leaf nodes
-        counter = 0
-        nodeList = []
-        edgeList = []
-        for node in graph.nodes:
-            if (node in query) or (node in evidence):
-                continue
-            for edge in graph.edges:
-                if node == edge[1]:
-                    counter += 1
-            if counter == 0: nodeList.append(node)
-            else: counter = 0
+        e = check_single(evidence)
+        #prune edges
+        for node in e:
+            graph.remove_edges_from([e for e in graph.edges if e[0]==node])
+            #apply reduced factor
         
-        for node in nodeList:
-            graph.remove_node(node)
-
-        #delete edges that follow from evidence
-        for item in check_single(evidence):
+        nodeList = []
+        #prune nodes
+        for node in graph.nodes:
+            if (node in check_single(query)) or (node in e): continue
+            counter = 0
             for edge in graph.edges:
-                if item == edge[0]:
-                    edgeList.append(edge)
-        for edge in edgeList:
-            graph.remove_edge(*edge)
-
+                if node == edge[1]: counter += 1
+            if counter == 0: nodeList.append(node)
+        if nodeList != []: graph.remove_nodes_from(nodeList)
         return graph
+    
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
