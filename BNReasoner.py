@@ -114,18 +114,39 @@ class BNReasoner:
         """
         return self.d_separated(x, y, z)
 
-    def edge_prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+    def prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
         graph = deepcopy(self.bn.structure)
-        if evidence in graph.edges():
-            graph.remove_node(evidence)
-            print(graph.edges)
+        # delete leaf nodes
+        counter = 0
+        nodeList = []
+        edgeList = []
+        for node in graph.nodes:
+            if (node in query) or (node in evidence):
+                continue
+            for edge in graph.edges:
+                if node == edge[1]:
+                    counter += 1
+            if counter == 0: nodeList.append(node)
+            else: counter = 0
+        
+        for node in nodeList:
+            graph.remove_node(node)
+
+        #delete edges that follow from evidence
+        for item in check_single(evidence):
+            for edge in graph.edges:
+                if item == edge[0]:
+                    edgeList.append(edge)
+        for edge in edgeList:
+            graph.remove_edge(*edge)
 
         return graph
 
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    print(bn.d_separated("Rain?", "Sprinkler?", "Winter?"))
-    #bn.bn.draw_structure()
-    #bn.edge_prune("Rain?", "Winter?")
+    #print(bn.d_separated("Rain?", "Sprinkler?", "Winter?"))
+    bn.bn.draw_structure()
+    bn.prune("Rain?", "Winter?")
+    bn.bn.draw_structure()
     
