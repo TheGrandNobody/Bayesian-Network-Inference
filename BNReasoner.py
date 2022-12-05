@@ -1,6 +1,7 @@
 from typing import Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
+import pandas as pd
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -29,16 +30,38 @@ class BNReasoner:
             self.bn.load_from_bifxml(net)
         else:
             self.bn = net
-    
-    def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
-        """ Checks (recursively) if there is a path from x to y in a given graph.
+
+    def marginalize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+        """ Sums out a given variable, given the joint probability distribution with other variables.
+        Args:
+            variable (str): A string indicating the variable that needs to be summed-out
+            f1 (pd.DataFrame): A factor containing the variable that needs to be summed-out
+
+        Returns:
+            pd.DataFrame: A conditional probability table with the specified variable summed-out
+        """
+        # get other variables 
+        variables = f1.columns.tolist()
+        variables = list(filter(lambda var: var != "p" and var != variable, variables))
+
+        # Compute the new cpt and return it
+        return f1.groupby(variables)["p"].sum()
+
+    def ordering(self, heuristic: str):
+        """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
 
         Args:
-            graph (nx.DiGraph): The graph to check.
-            x (str): The specified variable x.
-            y (List[str]): The specified variable y.
-            visited (List[str]): A list of visited nodes.
+            cpt (pd.DataFrame): _description_
+            heuristic (str): _description_
+        """
+        print(self.bn.get_interaction_graph())
 
+    def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
+        """ Checks (recursively) if there is a path from x to any node in y in a given graph.
+        Args:
+            graph (nx.DiGraph): The graph to check.
+            x (str): The starting node.
+            y (List[str]): The target node(s).
         Returns:
             bool: True if there is a path from x to y, False otherwise.
         """
@@ -54,28 +77,26 @@ class BNReasoner:
                 visited.append(n)
                 if self.has_path(graph, n, y, visited):
                     return True
-        return False
+        return False  
 
     def _prune(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str])\
-       -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
-        """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
-            and removing all edges that are outgoing from z.
-
-        Args:
-            graph (nx.DiGraph): An acyclic directed graph representing the BN.
-            x (List[str]): A list containing all nodes in x.
-            y (List[str]): A list containing all nodes in y.
-            z (List[str]): A list containing all nodes in z.
-
-        Returns:
-            Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
-        """
-        prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
-        # Remove all leaf nodes that are not in x, y or z
-        graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
-        # Remove all edges that are outgoing from z
-        graph.remove_edges_from(list(graph.edges(z)))
-        return list(prev_n), list(prev_e)
+          -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
+          """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
+              and removing all edges that are outgoing from z.
+          Args:
+              graph (nx.DiGraph): An acyclic directed graph representing the BN.
+              x (List[str]): A list containing all nodes in x.
+              y (List[str]): A list containing all nodes in y.
+              z (List[str]): A list containing all nodes in z.
+          Returns:
+              Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
+          """
+          prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
+          # Remove all leaf nodes that are not in x, y or z
+          graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
+          # Remove all edges that are outgoing from z
+          graph.remove_edges_from(list(graph.edges(z)))
+          return list(prev_n), list(prev_e)
 
     def d_separated(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
         """ Checks whether x is d-separated from y given z.
@@ -113,8 +134,28 @@ class BNReasoner:
             bool: True if x is independent from y given z, False otherwise.
         """
         return self.d_separated(x, y, z)
+    
+    def f_multiply(self, f1: pd.DataFrame, f2: pd.DataFrame) -> pd.DataFrame:
+        """ Multiplies two given factors together.
 
-    def prune(self, query: Union[str, list[str]], evidence: Union[str, list[str]]):
+        Args:
+            f1 (pd.DataFrame): The first specified factor.
+            f2 (pd.DataFrame): The second specified factor.
+
+        Returns:
+            pd.DataFrame: The resulting factor from the product of f1 and f2.
+        """
+        def multiply(var: List, r1: pd.Series, r2: pd.Series) -> float:
+            var.append(r1.drop("p").values.tolist())
+            return r1["p"] * r2["p"]
+        new_f1 = []
+        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)]for i in range(len(f2.drop(columns="p").columns))]
+        p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
+        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(p=p, **dict(zip(f2.drop(columns="p"), new_f2)))
+
+        
+
+    def prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
         # delete leaf nodes
         counter = 0
@@ -142,11 +183,11 @@ class BNReasoner:
 
         return graph
 
-
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    #print(bn.d_separated("Rain?", "Sprinkler?", "Winter?"))
-    bn.bn.draw_structure()
-    bn.prune("Rain?", "Winter?")
-    bn.bn.draw_structure()
-    
+    cpts = bn.bn.get_all_cpts()
+    print(cpts['Rain?'])
+    print(cpts['Wet Grass?'])
+    print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
+
+
