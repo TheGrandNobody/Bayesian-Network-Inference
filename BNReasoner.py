@@ -216,9 +216,9 @@ class BNReasoner:
             var.append(r1.drop("p").values.tolist())
             return r1["p"] * r2["p"]
         new_f1 = []
-        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)]for i in range(len(f2.drop(columns="p").columns))]
+        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)] for i in range(len(f2.drop(columns="p").columns))]
         p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
-        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2, p=p)))
+        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2), p=p))
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
@@ -241,3 +241,6 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
+    print(bn.bn.get_cpt("Wet Grass?"))
+    print(bn.bn.get_cpt("Sprinkler?"))
+    print(bn.f_multiply(bn.bn.get_cpt("Wet Grass?"), bn.bn.get_cpt("Sprinkler?")))
