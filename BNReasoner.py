@@ -153,8 +153,6 @@ class BNReasoner:
         p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
         return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(p=p, **dict(zip(f2.drop(columns="p"), new_f2)))
 
-        
-
     def edge_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
         if evidence in graph.edges():
@@ -164,10 +162,5 @@ class BNReasoner:
         return graph
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example.BIFXML")
-    cpts = bn.bn.get_all_cpts()
-    print(cpts['Rain?'])
-    print(cpts['Wet Grass?'])
-    print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
-
-
+    bn = BNReasoner("testing/dog_problem.BIFXML")
+    bn.bn.draw_structure()
