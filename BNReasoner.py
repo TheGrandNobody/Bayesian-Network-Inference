@@ -24,7 +24,7 @@ class BNReasoner:
             net (Union[str, BayesNet]): Either file path of the bayesian network in BIFXML format or BayesNet object
         """
         if type(net) == str:
-            # constructs a BN object
+            # Constructs a BN object
             self.bn = BayesNet()
             # Loads the BN from an BIFXML file
             self.bn.load_from_bifxml(net)
@@ -49,9 +49,15 @@ class BNReasoner:
             f1 (pd.DataFrame): A factor containing the variable that needs to be maximized-out.
 
         Returns:
-            pd.DataFrame: A conditional probability table with the specified variable maximized-out.
+            pd.DataFrame: A conditional probability table with the specified variable maximized-out and their corresponding extended factors.
         """
-        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].max().reset_index()
+        # Compute the CPT with the maximum probability for the given variable
+        new = f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable and "ext. factor" not in c])["p"].max().reset_index()
+        # Find any previous extended factors present in the table
+        prev_factors = [c for c in f1.columns.tolist() if "ext. factor" in c]
+        # Compute the new extended factor for the new CPT and add it to the table
+        ext_factor = pd.merge(f1, new, on=['p'], how='inner').rename(columns={variable: "ext. factor " + variable})[f"ext. factor {variable}"]
+        return new.assign(**dict(f1[prev_factors]), **{f"ext. factor {variable}": ext_factor}) if prev_factors else new.assign(**{f"ext. factor {variable}": ext_factor})
 
     def ordering(self, heuristic: str):
         """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
@@ -162,13 +168,13 @@ class BNReasoner:
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
         e = check_single(evidence)
-        #prune edges
+        # Prune edges
         for node in e:
             graph.remove_edges_from([e for e in graph.edges if e[0]==node])
-            #apply reduced factor
+            # Apply reduced factor
         
         nodeList = []
-        #prune nodes
+        # Prune nodes
         for node in graph.nodes:
             if (node in check_single(query)) or (node in e): continue
             counter = 0
@@ -180,6 +186,6 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    print(bn.bn.get_cpt("Sprinkler?"))
-    x = bn.maximize("Winter?", bn.bn.get_cpt("Sprinkler?"))
+    print(bn.bn.get_cpt("Wet Grass?"))
+    x = bn.maximize("Sprinkler?", bn.bn.get_cpt("Wet Grass?"))
     print(x)
