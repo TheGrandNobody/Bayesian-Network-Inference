@@ -32,24 +32,27 @@ class BNReasoner:
         else:
             self.bn = net
 
-    def marginalization(self, variable: str, cpt: pd.DataFrame):
-        """Sums out a given variable, given the joint probability distribution with other variables.
+    def marginalize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+        """ Sums-out a given variable, given a factor containing it.
         Args:
-            variable (str): a string indicating the variable that needs to be summed-out
-            cpt (pd.DataFrame): A cpt containing the variable that needs to be summed-out
+            variable (str): A string indicating the variable that needs to be summed-out
+            f1 (pd.DataFrame): A factor containing the variable that needs to be summed-out
 
         Returns:
-            pd.DataFrame: cpt where variable is summed-out
+            pd.DataFrame: A conditional probability table with the specified variable summed-out
         """
+        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].sum().reset_index()
+    
+    def maximize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+        """ Maximizes-out a given variable, given a factor containing it.
+        Args:
+            variable (str): A string indicating the variable that needs to be maximized-out.
+            f1 (pd.DataFrame): A factor containing the variable that needs to be maximized-out.
 
-        # get variables that are not summed out
-        variables = cpt.columns.tolist()
-        variables = list(filter(lambda var: var != "p" and var != variable, variables))
-
-        # make new cpt and return
-        new_cpt = cpt.groupby(variables)["p"].sum()
-
-        return new_cpt
+        Returns:
+            pd.DataFrame: A conditional probability table with the specified variable maximized-out.
+        """
+        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].max().reset_index()
     
     def new_edges(self, variable: str, neighbours: List[list], graph: nx.DiGraph):
         """Returns a list of new edges that arise by removing a given variable in the graph.
@@ -192,17 +195,46 @@ class BNReasoner:
             bool: True if x is independent from y given z, False otherwise.
         """
         return self.d_separated(x, y, z)
+    
+    def f_multiply(self, f1: pd.DataFrame, f2: pd.DataFrame) -> pd.DataFrame:
+        """ Multiplies two given factors together.
 
-    def edge_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+        Args:
+            f1 (pd.DataFrame): The first specified factor.
+            f2 (pd.DataFrame): The second specified factor.
+
+        Returns:
+            pd.DataFrame: The resulting factor from the product of f1 and f2.
+        """
+        def multiply(var: List, r1: pd.Series, r2: pd.Series) -> float:
+            var.append(r1.drop("p").values.tolist())
+            return r1["p"] * r2["p"]
+        new_f1 = []
+        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)]for i in range(len(f2.drop(columns="p").columns))]
+        p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
+        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2, p=p)))
+
+    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
-        if evidence in graph.edges():
-            graph.remove_node(evidence)
-            print(graph.edges)
-
+        e = check_single(evidence)
+        #prune edges
+        for node in e:
+            graph.remove_edges_from([e for e in graph.edges if e[0]==node])
+            #apply reduced factor
+        
+        nodeList = []
+        #prune nodes
+        for node in graph.nodes:
+            if (node in check_single(query)) or (node in e): continue
+            counter = 0
+            for edge in graph.edges:
+                if node == edge[1]: counter += 1
+            if counter == 0: nodeList.append(node)
+        if nodeList != []: graph.remove_nodes_from(nodeList)
         return graph
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example2.BIFXML")
-    # bn.bn.draw_structure()
-    order = bn.ordering("f", bn.bn.get_all_variables())
-
+    bn = BNReasoner("testing/lecture_example.BIFXML")
+    print(bn.bn.get_cpt("Sprinkler?"))
+    x = bn.maximize("Winter?", bn.bn.get_cpt("Sprinkler?"))
+    print(x)
