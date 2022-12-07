@@ -153,13 +153,27 @@ class BNReasoner:
         p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
         return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(p=p, **dict(zip(f2.drop(columns="p"), new_f2)))
 
-    def edge_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
-        graph = deepcopy(self.bn.structure)
-        if evidence in graph.edges():
-            graph.remove_node(evidence)
-            print(graph.edges)
+        
 
+    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+        graph = deepcopy(self.bn.structure)
+        e = check_single(evidence)
+        #prune edges
+        for node in e:
+            graph.remove_edges_from([e for e in graph.edges if e[0]==node])
+            #apply reduced factor
+        
+        nodeList = []
+        #prune nodes
+        for node in graph.nodes:
+            if (node in check_single(query)) or (node in e): continue
+            counter = 0
+            for edge in graph.edges:
+                if node == edge[1]: counter += 1
+            if counter == 0: nodeList.append(node)
+        if nodeList != []: graph.remove_nodes_from(nodeList)
         return graph
+    
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/dog_problem.BIFXML")
