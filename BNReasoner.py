@@ -32,7 +32,7 @@ class BNReasoner:
             self.bn = net
 
     def marginalize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
-        """ Sums out a given variable, given the joint probability distribution with other variables.
+        """ Sums-out a given variable, given a factor containing it.
         Args:
             variable (str): A string indicating the variable that needs to be summed-out
             f1 (pd.DataFrame): A factor containing the variable that needs to be summed-out
@@ -40,12 +40,18 @@ class BNReasoner:
         Returns:
             pd.DataFrame: A conditional probability table with the specified variable summed-out
         """
-        # get other variables 
-        variables = f1.columns.tolist()
-        variables = list(filter(lambda var: var != "p" and var != variable, variables))
+        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].sum().reset_index()
+    
+    def maximize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+        """ Maximizes-out a given variable, given a factor containing it.
+        Args:
+            variable (str): A string indicating the variable that needs to be maximized-out.
+            f1 (pd.DataFrame): A factor containing the variable that needs to be maximized-out.
 
-        # Compute the new cpt and return it
-        return f1.groupby(variables)["p"].sum()
+        Returns:
+            pd.DataFrame: A conditional probability table with the specified variable maximized-out.
+        """
+        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].max().reset_index()
 
     def ordering(self, heuristic: str):
         """Computes an ordering for the elimination of a given variable. Two heuristics can be chosen: min-fill and min-degree.
@@ -151,9 +157,7 @@ class BNReasoner:
         new_f1 = []
         new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)]for i in range(len(f2.drop(columns="p").columns))]
         p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
-        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(p=p, **dict(zip(f2.drop(columns="p"), new_f2)))
-
-        
+        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2, p=p)))
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         graph = deepcopy(self.bn.structure)
@@ -173,8 +177,9 @@ class BNReasoner:
             if counter == 0: nodeList.append(node)
         if nodeList != []: graph.remove_nodes_from(nodeList)
         return graph
-    
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/dog_problem.BIFXML")
-    bn.bn.draw_structure()
+    bn = BNReasoner("testing/lecture_example.BIFXML")
+    print(bn.bn.get_cpt("Sprinkler?"))
+    x = bn.maximize("Winter?", bn.bn.get_cpt("Sprinkler?"))
+    print(x)
