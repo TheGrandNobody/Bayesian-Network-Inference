@@ -41,7 +41,7 @@ class BNReasoner:
         Returns:
             pd.DataFrame: A conditional probability table with the specified variable summed-out
         """
-        return f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable])["p"].sum().reset_index()
+        return f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable)])["p"].sum().reset_index()
     
     def maximize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
         """ Maximizes-out a given variable, given a factor containing it.
@@ -53,23 +53,23 @@ class BNReasoner:
             pd.DataFrame: A conditional probability table with the specified variable maximized-out and their corresponding extended factors.
         """
         # Compute the CPT with the maximum probability for the given variable
-        new = f1.groupby([c for c in f1.columns.tolist() if c != "p" and c != variable and "ext. factor" not in c])["p"].max().reset_index()
+        new = f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable) and "ext. factor" not in c])["p"].max().reset_index()
             # Find any previous extended factors present in the table
         prev_factors = [c for c in f1.columns.tolist() if "ext. factor" in c]
         # Compute the new extended factor for the new CPT and add it to the table
         ext_factor = pd.merge(f1, new, on=['p'], how='inner').rename(columns={variable: "ext. factor " + variable})[f"ext. factor {variable}"]
         return new.assign(**dict(f1[prev_factors]), **{f"ext. factor {variable}": ext_factor}) if prev_factors else new.assign(**{f"ext. factor {variable}": ext_factor})
 
-    def new_edges(self, variable: str, neighbours: List[list], graph: nx.DiGraph):
+    def new_edges(self, neighbours: List[List[str]], graph: nx.DiGraph) -> List[List[str]]:
         """Returns a list of new edges that arise by removing a given variable in the graph.
 
         Args:
             variable (str): The variable that is removed from the graph
-            neighbours (List[list]): list of neighbours (both neighbours and predecessors)
-            graph (nx.DiGraph): The bayesian graph
+            neighbours (List[List[str]]): List of neighbours (both neighbours and predecessors)
+            graph (nx.DiGraph): A directed graph representing the Bayesian network
 
         Returns:
-            List[list]: list of new edges 
+            List[List[str]]: A list of new edges that arise by removing a given variable in the graph
         """
         return [(var[1], var2[1]) for var, i in zip(neighbours, range(0, len(neighbours)-1)) for var2 in neighbours[i+1:] if not any(var2[1] in sublist for sublist in nx.edges(graph, var[1]))]
         
@@ -88,14 +88,14 @@ class BNReasoner:
         # list for new order and get interaction graph current BN
         new_order = []
         G =  self.bn.get_interaction_graph()
-        # Draw interactiongraph and save
+        # Draw interaction graph and save
         positions = nx.spring_layout(G)
         nx.draw(G, positions, with_labels = True)
         
         # create dict with variables (key) and a list of corresponding new edges(when variable is removed)(value)
         new_edges = {var: self.new_edges(var, list(nx.edges(G, var)), G) for var in to_eliminate}
 
-        # find best variable to eliminate until all variables were eliminated
+        # Find best variable to eliminate until all variables were eliminated
         while len(to_eliminate) > 0:
             # choose heuristic
             if heuristic == "e":
@@ -241,6 +241,3 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
-    print(bn.bn.get_cpt("Wet Grass?"))
-    x = bn.maximize("Sprinkler?", bn.bn.get_cpt("Wet Grass?"))
-    print(x)
