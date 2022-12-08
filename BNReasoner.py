@@ -253,9 +253,13 @@ class BNReasoner:
         #Compute joint marginal
         #Sum out q
         #return joint marginal divided by sum out q
-        
-        if evidence == []: return self.bn.get_cpt(query)
-        else: print("too much evidence")
+        q = check_single(query)
+        qReasoner = self.network_prune(query, evidence)
+        #qReasoner.ordering('f', [x for x in qReasoner.bn.get_all_variables() if not in check_single(query)])
+        a = qReasoner.elim_var([x for x in qReasoner.bn.get_all_variables() if x not in q], qReasoner.bn )
+        if len(q) == 1:
+            b = qReasoner.marginalize(query, qReasoner.bn.get_cpt(query))
+        return a/b
     
 
 if __name__ == "__main__":
@@ -267,6 +271,6 @@ if __name__ == "__main__":
     #print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
     g = bnr.network_prune('Wet Grass?', ['Winter?', 'Rain?'])
     #g.bn.draw_structure()
-    #print(bnr.marginal_distribution('Rain?', []))
+    #print(bnr.marginal_distribution('Wet Grass?', 'Rain?'))
     #bnr.bn.draw_structure()
 
