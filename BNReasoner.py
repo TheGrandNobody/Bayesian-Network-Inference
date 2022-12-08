@@ -2,6 +2,7 @@ from typing import Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -156,30 +157,52 @@ class BNReasoner:
         
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
-        graph = deepcopy(self.bn.structure)
+        """ prunes the current network such that it can answer the given query
+
+        Args:
+            query Union[str, List[str]]: The query to be answered.
+            evidence Union[str, List[str]]: The evidence, on which basis the query can be answered.
+
+        Returns:
+            BNReasoner: A new BNReasoner with a pruned graph and updated values.
+        """
+        graph = deepcopy(self)
         e = check_single(evidence)
+        q = check_single(query)
+        instance = {}
+        for val in e: instance[val] = True
         #prune edges
         for node in e:
-            graph.remove_edges_from([e for e in graph.edges if e[0]==node])
-            #apply reduced factor
-        
+            graph.bn.structure.remove_edges_from([x for x in graph.bn.structure.edges if (x[0]==node and x[1] not in e+q)])
+        for i in graph.bn.get_all_variables():
+            graph.bn.update_cpt(i, graph.bn.reduce_factor(pd.Series(instance), self.bn.get_cpt(i)))
         nodeList = []
         #prune nodes
-        for node in graph.nodes:
-            if (node in check_single(query)) or (node in e): continue
-            counter = 0
-            for edge in graph.edges:
-                if node == edge[1]: counter += 1
-            if counter == 0: nodeList.append(node)
-        if nodeList != []: graph.remove_nodes_from(nodeList)
+        for node in graph.bn.structure.nodes:
+            if (node in e+q): continue
+            if graph.bn.get_children(node) == []: nodeList.append(node)
+        if nodeList != []: graph.bn.structure.remove_nodes_from(nodeList)
         return graph
+
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+        #Reduce factors wrt e
+        #Compute joint marginal
+        #Sum out q
+        #return joint marginal divided by sum out q
+        
+        if evidence == []: return self.bn.get_cpt(query)
+        else: print("too much evidence")
     
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example.BIFXML")
-    cpts = bn.bn.get_all_cpts()
-    print(cpts['Rain?'])
-    print(cpts['Wet Grass?'])
-    print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
-
+    bnr = BNReasoner("testing/lecture_example.BIFXML")
+    cpts = bnr.bn.get_all_cpts()
+    #print(cpts)
+    #print(cpts['Rain?'])
+    #print(cpts['Wet Grass?'])
+    #print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
+    g = bnr.network_prune('Wet Grass?', ['Winter?', 'Rain?'])
+    #g.bn.draw_structure()
+    #print(bnr.marginal_distribution('Rain?', []))
+    #bnr.bn.draw_structure()
 
