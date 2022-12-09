@@ -221,31 +221,24 @@ class BNReasoner:
         return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2), p=p))
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
-        """ prunes the current network such that it can answer the given query
+        """ Prunes the current network such that it can answer the given query
 
         Args:
             query Union[str, List[str]]: The query to be answered.
             evidence Union[str, List[str]]: The evidence, on which basis the query can be answered.
 
         Returns:
-            BNReasoner: A new BNReasoner with a pruned graph and updated values.
+            BayesNet: A new BN with a pruned graph and updated values.
         """
-        graph = deepcopy(self)
-        e = check_single(evidence)
-        q = check_single(query)
-        instance = {}
-        for val in e: instance[val] = True
-        #prune edges
-        for node in e:
-            graph.bn.structure.remove_edges_from([x for x in graph.bn.structure.edges if (x[0]==node and x[1] not in e+q)])
-        for i in graph.bn.get_all_variables():
-            graph.bn.update_cpt(i, graph.bn.reduce_factor(pd.Series(instance), self.bn.get_cpt(i)))
-        nodeList = []
-        #prune nodes
-        for node in graph.bn.structure.nodes:
-            if (node in e+q): continue
-            if graph.bn.get_children(node) == []: nodeList.append(node)
-        if nodeList != []: graph.bn.structure.remove_nodes_from(nodeList)
+        graph = deepcopy(self.bn)
+        e, q = check_single(evidence), check_single(query)
+        instance = {val: True for val in e}
+        # Prune edges
+        [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e+q)]) for node in e]
+        [graph.update_cpt(i, graph.reduce_factor(pd.Series(instance), self.bn.get_cpt(i))) for i in graph.get_all_variables()]
+        # Prune nodes
+        nodeList = [node for node in graph.structure.nodes if not (node in e+q or graph.get_children(node))]
+        if nodeList: graph.structure.remove_nodes_from(nodeList)
         return graph
 
     def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
