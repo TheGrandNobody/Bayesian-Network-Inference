@@ -211,13 +211,10 @@ class BNReasoner:
         Returns:
             pd.DataFrame: The resulting factor from the product of f1 and f2.
         """
-        def multiply(var: List, r1: pd.Series, r2: pd.Series) -> float:
-            var.append(r1.drop("p").values.tolist())
-            return r1["p"] * r2["p"]
-        new_f1 = []
-        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)] for i in range(len(f2.drop(columns="p").columns))]
-        p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
-        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2), p=p))
+        f1, f2 = (f2, f1) if len(f1) < len(f2) else (f1, f2)
+        shared = list(set(f1.columns) & set(f2.columns))
+        p = [r1.drop("p").values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
+        return pd.DataFrame(p, columns=sorted(list(set().union(f1, f2))))
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         """ Prunes the current network such that it can answer the given query
@@ -255,6 +252,9 @@ class BNReasoner:
     
 
 if __name__ == "__main__":
-    bn = BNReasoner("test_cases/testcase2.BIFXML")
-    print(bn.bn.get_all_cpts())
+    bn = BNReasoner("testing/abc.BIFXML")
+    print(bn.bn.get_cpt("A"))
+    print(bn.bn.get_cpt("B"))
+    x = bn.f_multiply(bn.bn.get_cpt("B"), bn.bn.get_cpt("A"))
+    print(x)
     
