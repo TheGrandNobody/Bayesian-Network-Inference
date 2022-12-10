@@ -2,7 +2,6 @@ from typing import Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -256,14 +255,6 @@ class BNReasoner:
     
 
 if __name__ == "__main__":
-    bnr = BNReasoner("testing/lecture_example.BIFXML")
-    cpts = bnr.bn.get_all_cpts()
-    #print(cpts)
-    #print(cpts['Rain?'])
-    #print(cpts['Wet Grass?'])
-    #print(bn.f_multiply(cpts['Winter?'], cpts['Wet Grass?']))
-    g = bnr.network_prune('Wet Grass?', ['Winter?', 'Rain?'])
-    #g.bn.draw_structure()
-    #print(bnr.marginal_distribution('Wet Grass?', 'Rain?'))
-    #bnr.bn.draw_structure()
-
+    bn = BNReasoner("test_cases/testcase2.BIFXML")
+    print(bn.bn.get_all_cpts())
+    

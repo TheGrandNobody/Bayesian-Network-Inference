@@ -8,8 +8,6 @@
 	Output created Wed Aug 12 21:16:40 GMT+01:00 1998
 -->
 
-
-
 <!-- DTD for the XMLBIF 0.3 format -->
 <!DOCTYPE BIF [
 	<!ELEMENT BIF ( NETWORK )*>
@@ -25,7 +23,6 @@
 	<!ELEMENT TABLE (#PCDATA)>
 	<!ELEMENT PROPERTY (#PCDATA)>
 ]>
-
 
 <BIF VERSION="0.3">
 <NETWORK>
