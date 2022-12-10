@@ -14,14 +14,14 @@ def generate_probability(values: List[int]) -> None:
     values.append(str(1 - first))
 
 def new(var: Element, name: str, text: str) -> None:
-        """ Generates a given sub element.
+    """ Generates a given sub element.
 
-        Args:
-            var (Element): The element to add the new sub element to.
-            text (str): The text of the sub element.
-        """
-        variable = SubElement(var, name)
-        variable.text = text
+    Args:
+        var (Element): The element to add the new sub element to.
+        text (str): The text of the sub element.
+    """
+    variable = SubElement(var, name)
+    variable.text = text
 
 def new_variable(network: Element, name: str) -> str:
     """ Create a new variable element and add it to the network element.
@@ -30,23 +30,44 @@ def new_variable(network: Element, name: str) -> str:
         network (Element): The network element to add the variable to.
         name (str): The name of the variable.
     """
-
+    # Create a variable element
     variable = SubElement(network, "VARIABLE", {"TYPE": "nature"})
+    # Give the variable a name
     variable_name = SubElement(variable, "NAME")
     variable_name.text = name
+    # Create the outcomes (True/False) for the variable
     [new(variable, "OUTCOME", value) for value in ["True", "False"]]
 
     return name
 
 def new_table(network: Element, prior: str, given: List[str]) -> None:
+    """ Create a new CPT for a given prior and a list of evidence elements.
+
+    Args:
+        network (Element): The network element to add the CPT to.
+        prior (str): The name of the prior variable.
+        given (List[str]): The list of evidence variables.
+    """
+    # Create the definition element
     definition = SubElement(network, "DEFINITION")
+    # Create the for row
     new(definition, "FOR", prior)
+    # Create the given rows
     [new(definition, "GIVEN", g) for g in given]
+    # Generate probabilities for each row
     values = []
     [generate_probability(values) for _ in range(len(given) + 1)]
     new(definition, "TABLE", " ".join(values))
 
 def new_file(path: str, node: int, edges: bool, nodes: bool) -> None:
+    """ Create a new BIFXML file for a given number of nodes and a given configuration.
+
+    Args:
+        path (str): The path of the folder to add the file to.
+        node (int): The number of nodes present for this BN.
+        edges (bool): If this is an edge-only test case (or both).
+        nodes (bool): If this is a node-only test case (or both).
+    """
     # Create the root element
     root = Element("BIF", {"VERSION": "0.3"})
 
