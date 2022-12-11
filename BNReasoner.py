@@ -268,8 +268,8 @@ class BNReasoner:
         """
         f1, f2 = (f2, f1) if len(f1) < len(f2) else (f1, f2)
         shared = list(set(f1.columns) & set(f2.columns))
-        p = [r1.drop("p").values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
-        return pd.DataFrame(p, columns=sorted(list(set().union(f1, f2))))
+        p = [r1.drop("p").values.tolist() + r2.drop(shared).values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
+        return pd.DataFrame(p, columns=f1.drop("p", axis=1).columns.to_list() + f2.drop(shared, axis=1).columns.to_list() + ["p"])
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
         """ Prunes the current network such that it can answer the given query
@@ -307,5 +307,6 @@ class BNReasoner:
     
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example.BIFXML")
-    bn.bn.draw_structure()
+    bn = BNReasoner("testing/abc.BIFXML")
+    x = bn.f_multiply(bn.bn.get_cpt("B"), bn.bn.get_cpt("C"))
+    print(x)
