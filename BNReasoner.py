@@ -307,5 +307,5 @@ class BNReasoner:
     
 
 if __name__ == "__main__":
-    bn = BNReasoner("/home/m_rosa/AI/KR/Bayesian-Network-Inference/testing/abc.BIFXML")
-    bn.elim_var(["A"])
+    bn = BNReasoner("testing/lecture_example.BIFXML")
+    bn.bn.draw_structure()
