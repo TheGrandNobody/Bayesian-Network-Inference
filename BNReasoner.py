@@ -1,4 +1,4 @@
-from typing import Union, List, Tuple
+from typing import Dict, Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
@@ -118,63 +118,69 @@ class BNReasoner:
             G.remove_node(next)       
         return new_order
 
-    def elim_var(self, variables: tuple) -> None:
-        """_summary_
+    def elim_var(self, variables: List[str]) -> None:
+        """ Applies variable elimination to a BN for a given list of variables to eliminate.
 
         Args:
-            variables (tuple): a tuple containing variables to eliminate from a BN. It is expected that this tuple already is ordered. 
+            variables (List[str]): An (ordered) list of variables to eliminate from a BN.. 
 
         Returns:
-            new_function (nx.DiGraph): Graph containing all variables that were not eliminated with their probabilities.
+            prior (pd.Dataframe): The resulting prior after applying variable elimination.
         """
-        print(variables)
+        def chain(l: List[pd.DataFrame], j: int, factors: List[str]):
+            """Applies part of the chain rule for a list of factors.
+
+            Args:
+                l (List[pd.DataFrame]): A list of factors.
+                j (int): The index of the factor to be multiplied with the previous one.
+                factors (List[str]): A list of CPT names to use for multiplication.
+
+            Returns:
+                pd.DataFrame: The resulting factor after multiplying the previous one with the current one.
+            """
+            l.append(self.f_multiply(l[j - 1], cpt_tables[factors[j]]))
 
         cpt_tables = self.bn.get_all_cpts()
-        print(cpt_tables)
-
-        # choose variable from list
-        for var, i in zip(variables, range(0, len(variables))):
-            print(cpt_tables)
-
-            print("variable", var)
-            
-            # multiply all factors (f) containing this variable 
-            factors = [node for node, table in cpt_tables.items() if var == node or var in table.columns]
-            print(factors)
+        # before: choose variable from list
+        # after: Take the first variable in the list, apply the chain rule, and marginalize the variable
+        for i, var in enumerate(variables):
+            # before: multiply all factors (f) containing the variable
+            # after: Fetch all factors containing the current variable and multiply them together
+            factors = [k for k, v in cpt_tables.items() if var in v.columns]
             if len(factors) > 1:
-                factor = cpt_tables[factors[0]]
-                for j in range(1, len(factors)):
-                    print("to be multiplied \n", factor,"\n" , cpt_tables[factors[j]])
-                    factor = self.f_multiply(factor, cpt_tables[factors[j]])
+                s = [cpt_tables[factors[0]]]
+                [chain(s, j, factors) for j in range(1, len(factors))]
             elif len(factors) == 1:
                 factor = cpt_tables[factors[0]]
             else:
                 continue
-            print("factor_multiply", factor)
+            # before: marginalize out the variable to obtain a new factor 
+            # after: Eliminate the variable from the factor
+            factor = self.marginalize(var, s[-1])
+            # Remove old factors from cpts (so that the algorithm knows that they are summed out)
+            cpt_tables = {k: v for k, v in cpt_tables.items() if k not in factors}
+            # Add the new factor as a cpt
+            cpt_tables[str(factor.drop("p", axis=1).columns.to_list()) + str(i)] = factor.assign(p=factor["p"]) 
 
-            # marginalize out this variable to obtain a new factor 
-            factor = self.marginalize(var, factor)
-            print("factor", factor )
+        # FIRST
+        # for element, i in zip(cpt_tables.keys(), range(0, len(cpt_tables)))
+        # vs
+        # for i, element in enumerate(cpt_tables.keys()) <-- this is better
+        # THEN
+        #for i, key in enumerate(cpt_tables.keys()):
+        #    if i == 0:
+        #        new_factor = cpt_tables[key]
+        #    else:
+        #        new_factor = self.f_multiply(new_factor, cpt_tables[key])
+        # VS
+        # p = [cpt_tables[list(cpt_tables.keys())[0]]]
+        # [chain(p, j, list(cpt_tables.keys())) for j in range(1, len(list(cpt_tables.keys())))]
 
-            # remove old factors from cpts (so that the algorithm knows that they are summed out)
-            for old in factors:
-                del cpt_tables[old]
-                
-            # put new factor in cpt_tables
-            cpt_tables[str(list(factor.columns[:len(factor.columns)- 1])) + str(i)] = factor.assign(**{"p": factor.loc[:, "p"]}) 
+        # Multiply all remaining cpts to get the final factor and return it
+        s = [cpt_tables[list(cpt_tables.keys())[0]]]
+        [chain(s, j, list(cpt_tables.keys())) for j in range(1, len(list(cpt_tables.keys())))]
         
-        # multiply all tables in cpt_tables to get final factor:
-        for key, i in zip(cpt_tables.keys(), range(0, len(cpt_tables))):
-            if i == 0:
-                new_factor = cpt_tables[key]
-            else:
-                print("multiply", new_factor, cpt_tables[key])
-                new_factor = self.f_multiply(new_factor, cpt_tables[key])
-        
-        # print("new_factor", new_factor)
-           
-        # return final factor
-        return new_factor
+        return s[-1]
         
 
     def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
@@ -307,6 +313,6 @@ class BNReasoner:
     
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/abc.BIFXML")
-    x = bn.f_multiply(bn.bn.get_cpt("B"), bn.bn.get_cpt("C"))
+    bn = BNReasoner("testing/lecture_example.BIFXML")
+    x = bn.elim_var(["Winter?"])
     print(x)
