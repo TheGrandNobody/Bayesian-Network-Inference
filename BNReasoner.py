@@ -72,7 +72,6 @@ class BNReasoner:
         """
         return [(var[1], var2[1]) for var, i in zip(neighbours, range(0, len(neighbours)-1)) for var2 in neighbours[i+1:] if not any(var2[1] in sublist for sublist in nx.edges(graph, var[1]))]
         
-
     def ordering(self, heuristic: str, to_eliminate: List[str]):
         """Computes an ordering for the elimination of a list of variables. Two heuristics can be chosen to decide the order of the list: min-fill and min-degree.
 
@@ -182,7 +181,6 @@ class BNReasoner:
         
         return s[-1]
         
-
     def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
         """ Checks (recursively) if there is a path from x to any node in y in a given graph.
         Args:
@@ -277,7 +275,7 @@ class BNReasoner:
         p = [r1.drop("p").values.tolist() + r2.drop(shared).values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
         return pd.DataFrame(p, columns=f1.drop("p", axis=1).columns.to_list() + f2.drop(shared, axis=1).columns.to_list() + ["p"])
 
-    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> BayesNet:
         """ Prunes the current network such that it can answer the given query
 
         Args:
@@ -298,21 +296,36 @@ class BNReasoner:
         if nodeList: graph.structure.remove_nodes_from(nodeList)
         return graph
 
-    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+        """Provides the marginal distribution given query and evidence
+
+            Args:
+                query: Union[str, List[str]]: query to be answered
+                evidence: Union[str, List[str]]:
+
+            Returns:
+                float: The probability of the result
+        """
         #Reduce factors wrt e
         #Compute joint marginal
         #Sum out q
         #return joint marginal divided by sum out q
         q = check_single(query)
-        qReasoner = self.network_prune(query, evidence)
-        #qReasoner.ordering('f', [x for x in qReasoner.bn.get_all_variables() if not in check_single(query)])
-        a = qReasoner.elim_var([x for x in qReasoner.bn.get_all_variables() if x not in q], qReasoner.bn )
+        newR = deepcopy(self)
+        qReasoner = newR.network_prune(query, evidence)
+        print([x for x in qReasoner.get_all_variables() if x not in q])
+        a = newR.elim_var([x for x in qReasoner.get_all_variables() if x not in q])
+        aVal = a.at[len(a)-1,'p']
+        print(aVal)
         if len(q) == 1:
-            b = qReasoner.marginalize(query, qReasoner.bn.get_cpt(query))
-        return a/b
+            b = newR.marginalize(query, qReasoner.get_cpt(query))
+            bVal = b.at[len(b)-1,'p']
+        #else:
+        return aVal/bVal
     
-
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
     x = bn.elim_var(["Winter?"])
+    print(bn.bn)
     print(x)
+    print(bn.marginal_distribution('Wet Grass?', 'Rain?'))
