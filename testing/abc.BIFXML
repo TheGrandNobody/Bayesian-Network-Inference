@@ -8,6 +8,8 @@
 	Output created Wed Aug 12 21:16:40 GMT+01:00 1998
 -->
 
+
+
 <!-- DTD for the XMLBIF 0.3 format -->
 <!DOCTYPE BIF [
 	<!ELEMENT BIF ( NETWORK )*>
@@ -24,76 +26,51 @@
 	<!ELEMENT PROPERTY (#PCDATA)>
 ]>
 
+
 <BIF VERSION="0.3">
 <NETWORK>
 <NAME>Dog-Problem</NAME>
 
 <!-- Variables -->
 <VARIABLE TYPE="nature">
-	<NAME>light-on</NAME>
-	<OUTCOME>true</OUTCOME>
-	<OUTCOME>false</OUTCOME>
-	<PROPERTY>position = (73, 165)</PROPERTY>
-</VARIABLE>
-
-<VARIABLE TYPE="nature">
-	<NAME>bowel-problem</NAME>
+	<NAME>A</NAME>
 	<OUTCOME>true</OUTCOME>
 	<OUTCOME>false</OUTCOME>
 	<PROPERTY>position = (190, 69)</PROPERTY>
 </VARIABLE>
 
 <VARIABLE TYPE="nature">
-	<NAME>dog-out</NAME>
+	<NAME>B</NAME>
 	<OUTCOME>true</OUTCOME>
 	<OUTCOME>false</OUTCOME>
 	<PROPERTY>position = (155, 165)</PROPERTY>
 </VARIABLE>
 
 <VARIABLE TYPE="nature">
-	<NAME>hear-bark</NAME>
+	<NAME>C</NAME>
 	<OUTCOME>true</OUTCOME>
 	<OUTCOME>false</OUTCOME>
 	<PROPERTY>position = (154, 241)</PROPERTY>
 </VARIABLE>
 
-<VARIABLE TYPE="nature">
-	<NAME>family-out</NAME>
-	<OUTCOME>true</OUTCOME>
-	<OUTCOME>false</OUTCOME>
-	<PROPERTY>position = (112, 69)</PROPERTY>
-</VARIABLE>
-
-
 <!-- Probability distributions -->
 <DEFINITION>
-	<FOR>light-on</FOR>
-	<GIVEN>family-out</GIVEN>
-	<TABLE>0.6 0.4 0.05 0.95 </TABLE>
+	<FOR>A</FOR>
+	<TABLE>0.4 0.6</TABLE>
 </DEFINITION>
 
 <DEFINITION>
-	<FOR>bowel-problem</FOR>
-	<TABLE>0.01 0.99 </TABLE>
+	<FOR>B</FOR>
+	<GIVEN>A</GIVEN>
+	<TABLE>0.8 0.2 0.1 0.9 </TABLE>
 </DEFINITION>
 
 <DEFINITION>
-	<FOR>dog-out</FOR>
-	<GIVEN>bowel-problem</GIVEN>
-	<GIVEN>family-out</GIVEN>
-	<TABLE>0.99 0.01 0.97 0.03 0.9 0.1 0.3  0.7 </TABLE>
+	<FOR>C</FOR>
+	<GIVEN>B</GIVEN>
+	<TABLE>0.5 0.5 0.7 0.3</TABLE>
 </DEFINITION>
 
-<DEFINITION>
-	<FOR>hear-bark</FOR>
-	<GIVEN>dog-out</GIVEN>
-	<TABLE>0.7 0.3 0.01 0.99 </TABLE>
-</DEFINITION>
-
-<DEFINITION>
-	<FOR>family-out</FOR>
-	<TABLE>0.15 0.85 </TABLE>
-</DEFINITION>
 
 
 </NETWORK>

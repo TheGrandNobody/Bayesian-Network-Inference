@@ -266,32 +266,45 @@ class BNReasoner:
         Returns:
             pd.DataFrame: The resulting factor from the product of f1 and f2.
         """
-        def multiply(var: List, r1: pd.Series, r2: pd.Series) -> float:
-            var.append(r1.drop("p").values.tolist())
-            return r1["p"] * r2["p"]
-        new_f1 = []
-        new_f2 = [[x[i] for x in f2.drop(columns="p").values.tolist() * len(f1.drop(columns="p").values)] for i in range(len(f2.drop(columns="p").columns))]
-        p = [multiply(new_f1, r1, r2) for _, r1 in f1.iterrows() for _, r2 in f2.iterrows()]
-        return pd.DataFrame(new_f1, columns=f1.drop(columns="p").columns).assign(**dict(zip(f2.drop(columns="p"), new_f2), p=p))
+        f1, f2 = (f2, f1) if len(f1) < len(f2) else (f1, f2)
+        shared = list(set(f1.columns) & set(f2.columns))
+        p = [r1.drop("p").values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
+        return pd.DataFrame(p, columns=sorted(list(set().union(f1, f2))))
 
     def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
-        graph = deepcopy(self.bn.structure)
-        e = check_single(evidence)
+        """ Prunes the current network such that it can answer the given query
+
+        Args:
+            query Union[str, List[str]]: The query to be answered.
+            evidence Union[str, List[str]]: The evidence, on which basis the query can be answered.
+
+        Returns:
+            BayesNet: A new BN with a pruned graph and updated values.
+        """
+        graph = deepcopy(self.bn)
+        e, q = check_single(evidence), check_single(query)
+        instance = {val: True for val in e}
         # Prune edges
-        for node in e:
-            graph.remove_edges_from([e for e in graph.edges if e[0]==node])
-            # Apply reduced factor
-        
-        nodeList = []
+        [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e+q)]) for node in e]
+        [graph.update_cpt(i, graph.reduce_factor(pd.Series(instance), self.bn.get_cpt(i))) for i in graph.get_all_variables()]
         # Prune nodes
-        for node in graph.nodes:
-            if (node in check_single(query)) or (node in e): continue
-            counter = 0
-            for edge in graph.edges:
-                if node == edge[1]: counter += 1
-            if counter == 0: nodeList.append(node)
-        if nodeList != []: graph.remove_nodes_from(nodeList)
+        nodeList = [node for node in graph.structure.nodes if not (node in e+q or graph.get_children(node))]
+        if nodeList: graph.structure.remove_nodes_from(nodeList)
         return graph
+
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]):
+        #Reduce factors wrt e
+        #Compute joint marginal
+        #Sum out q
+        #return joint marginal divided by sum out q
+        q = check_single(query)
+        qReasoner = self.network_prune(query, evidence)
+        #qReasoner.ordering('f', [x for x in qReasoner.bn.get_all_variables() if not in check_single(query)])
+        a = qReasoner.elim_var([x for x in qReasoner.bn.get_all_variables() if x not in q], qReasoner.bn )
+        if len(q) == 1:
+            b = qReasoner.marginalize(query, qReasoner.bn.get_cpt(query))
+        return a/b
+    
 
 if __name__ == "__main__":
     bn = BNReasoner("/home/m_rosa/AI/KR/Bayesian-Network-Inference/testing/abc.BIFXML")
