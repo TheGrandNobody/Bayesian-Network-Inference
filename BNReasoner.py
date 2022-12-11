@@ -2,7 +2,6 @@ from typing import Union, List, Tuple
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -84,11 +83,10 @@ class BNReasoner:
         Returns:
             list: List of variables to eliminate, with ordering decided by min-fill(f) or min-edge(e) heuristic. 
         """
-
         # list for new order and get interaction graph current BN
         new_order = []
         G =  self.bn.get_interaction_graph()
-        # Draw interaction graph and save
+        # draw interaction graph and save
         positions = nx.spring_layout(G)
         nx.draw(G, positions, with_labels = True)
         
@@ -120,8 +118,64 @@ class BNReasoner:
             G.remove_node(next)       
         return new_order
 
-    def elim_var(self, variables, bn):
-        pass
+    def elim_var(self, variables: tuple) -> None:
+        """_summary_
+
+        Args:
+            variables (tuple): a tuple containing variables to eliminate from a BN. It is expected that this tuple already is ordered. 
+
+        Returns:
+            new_function (nx.DiGraph): Graph containing all variables that were not eliminated with their probabilities.
+        """
+        print(variables)
+
+        cpt_tables = self.bn.get_all_cpts()
+        print(cpt_tables)
+
+        # choose variable from list
+        for var, i in zip(variables, range(0, len(variables))):
+            print(cpt_tables)
+
+            print("variable", var)
+            
+            # multiply all factors (f) containing this variable 
+            factors = [node for node, table in cpt_tables.items() if var == node or var in table.columns]
+            print(factors)
+            if len(factors) > 1:
+                factor = cpt_tables[factors[0]]
+                for j in range(1, len(factors)):
+                    print("to be multiplied \n", factor,"\n" , cpt_tables[factors[j]])
+                    factor = self.f_multiply(factor, cpt_tables[factors[j]])
+            elif len(factors) == 1:
+                factor = cpt_tables[factors[0]]
+            else:
+                continue
+            print("factor_multiply", factor)
+
+            # marginalize out this variable to obtain a new factor 
+            factor = self.marginalize(var, factor)
+            print("factor", factor )
+
+            # remove old factors from cpts (so that the algorithm knows that they are summed out)
+            for old in factors:
+                del cpt_tables[old]
+                
+            # put new factor in cpt_tables
+            cpt_tables[str(list(factor.columns[:len(factor.columns)- 1])) + str(i)] = factor.assign(**{"p": factor.loc[:, "p"]}) 
+        
+        # multiply all tables in cpt_tables to get final factor:
+        for key, i in zip(cpt_tables.keys(), range(0, len(cpt_tables))):
+            if i == 0:
+                new_factor = cpt_tables[key]
+            else:
+                print("multiply", new_factor, cpt_tables[key])
+                new_factor = self.f_multiply(new_factor, cpt_tables[key])
+        
+        # print("new_factor", new_factor)
+           
+        # return final factor
+        return new_factor
+        
 
     def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
         """ Checks (recursively) if there is a path from x to any node in y in a given graph.
@@ -240,7 +294,5 @@ class BNReasoner:
         return graph
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example.BIFXML")
-    print(bn.bn.get_cpt("Wet Grass?"))
-    print(bn.bn.get_cpt("Sprinkler?"))
-    print(bn.f_multiply(bn.bn.get_cpt("Wet Grass?"), bn.bn.get_cpt("Sprinkler?")))
+    bn = BNReasoner("/home/m_rosa/AI/KR/Bayesian-Network-Inference/testing/abc.BIFXML")
+    bn.elim_var(["A"])
