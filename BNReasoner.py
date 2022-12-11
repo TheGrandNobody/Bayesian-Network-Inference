@@ -161,20 +161,31 @@ class BNReasoner:
                 del cpt_tables[old]
                 
             # put new factor in cpt_tables
-            cpt_tables[str(list(factor.columns[:len(factor.columns)- 1])) + str(i)] = factor.assign(**{"p": factor.loc[:, "p"]}) 
+            cpt_tables["factor" + str(list(factor.columns[:len(factor.columns)- 1])) + str(i)] = factor.assign(**{"p": factor.loc[:, "p"]}) 
         
-        # multiply all tables in cpt_tables to get final factor:
-        for key, i in zip(cpt_tables.keys(), range(0, len(cpt_tables))):
-            if i == 0:
-                new_factor = cpt_tables[key]
-            else:
-                print("multiply", new_factor, cpt_tables[key])
-                new_factor = self.f_multiply(new_factor, cpt_tables[key])
+        # # multiply all factors if not with one factor left:
+        # if len(cpt_tables) > 1:
+        #     for key, cpt in cpt_tables.items():
+        #         if "factor" in key:
+        #             factor = self.f_multiply(factor, )
+
+
+
+        
+        
+        # for key, i in zip(cpt_tables.keys(), range(0, len(cpt_tables))):
+
+
+        #     if i == 0:
+        #         new_factor = cpt_tables[key]
+        #     else:
+        #         print("multiply", new_factor, cpt_tables[key])
+        #         new_factor = self.f_multiply(new_factor, cpt_tables[key])
         
         # print("new_factor", new_factor)
            
         # return final factor
-        return new_factor
+        return factor
         
 
     def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
