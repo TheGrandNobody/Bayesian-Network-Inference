@@ -44,10 +44,6 @@ def run():
         # save results (run time) in csv
         writer.writerow(f"{runtime_ve}, {runtime_ns},{node_count}, {edge_count}")
 
-
-
-
-
 if __name__== "__main__":
     pass
 
