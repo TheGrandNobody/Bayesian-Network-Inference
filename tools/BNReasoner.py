@@ -52,6 +52,9 @@ class BNReasoner:
         Returns:
             Type[pd.DataFrame]: A conditional probability table with the specified variable summed-out
         """
+        variables = [c for c in f1.columns.tolist() if c != "p" and "ext. factor" not in c]
+        if len(variables) == 1:
+            return pd.DataFrame({"T": pd.Series(""), "p": f1['p'].sum()})
         return f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable)])["p"].sum().reset_index()
     
     def maximize(self, variable: str, f1: Type[pd.DataFrame]) -> Type[pd.DataFrame]:
@@ -103,9 +106,6 @@ class BNReasoner:
         # List for new order and get interaction graph current BN
         new_order = []
         g =  self.bn.get_interaction_graph()
-        # Draw interaction graph and save it
-        positions = nx.spring_layout(g)
-        nx.draw(g, positions, with_labels = True)
         
         # Create dict with variables (key) and a list of corresponding new edges(when variable is removed)
         new_edges = {var: self.new_edges(list(nx.edges(g, var)), g) for var in to_eliminate}
@@ -116,7 +116,9 @@ class BNReasoner:
             if heuristic == "d":
                 # Fetch the variable with the least amount of edges
                 all_edges = {key: list(nx.edges(g, key)) for key in to_eliminate}
+                print("all edges", all_edges)
                 next = min(all_edges.items(), key = lambda x: len(x[1]))[0]
+                print("computation", min(all_edges.items(), key = lambda x: len(x[1])))
             elif heuristic == "f":
                 # Fetch the variable whose deletion would add the fewest new interactions
                 next = min(new_edges.items(), key = lambda x: len(x[1]))[0]
@@ -287,8 +289,8 @@ class BNReasoner:
         graph = deepcopy(self.bn)
         e, q = list(evidence.keys()), check_single(query)
         # Prune edges
-        [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e + q)]) for node in e]
-        [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), self.bn.get_cpt(i))) for i in graph.get_all_variables()]
+        graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e+q])
+        [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), graph.get_cpt(i))) for i in graph.get_all_variables()]
         # Prune nodes
         nodeList = [node for node in graph.structure.nodes if not (node in e + q or graph.get_children(node))]
         if nodeList: graph.structure.remove_nodes_from(nodeList)
@@ -340,7 +342,7 @@ class BNReasoner:
         [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))]
         return pr_query[-1]
     
-    def m_e_p(self, evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
+    def m_p_e(self, evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum expected probability given some evidence
 
         Args:
@@ -353,5 +355,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/earthquake.BIFXML")
+    bn = BNReasoner("../testing/earthquake.BIFXML")
     bn.bn.draw_structure()

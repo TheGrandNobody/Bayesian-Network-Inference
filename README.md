@@ -14,7 +14,7 @@ Additionally, there is a conditional probability table (CPT) generator available
 ## User Instructions
 To load a BN, one must load a .BIFXML file using a BNReasoner object an example is given in the *unit_tests* folder, which you can run using:
 ```
-python3 unit_tests/unit.py
+python3 unit_test/unit.py
 ```
 To generate CPTs, you must first edit the path, number of files and edge/node parameters in *cpt_generator.py*. Setting only the edge parameter to True will keep a constant number of nodes equal to the NUM_NODES parameter and gradually increase the number. Setting only the nodes parameter to True will create CPTs where all nodes are independent, but gradually increase per file. Setting both parameters to True will increase both nodes and edges gradually. 
 
