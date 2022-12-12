@@ -1,4 +1,4 @@
-from typing import Dict, Union, List, Tuple
+from typing import Dict, Type, Union, List, Tuple, Callable
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
@@ -14,6 +14,17 @@ def check_single(variable: Union[str, List[str]]) -> List[str]:
         List[str]: A list containing the variable, otherwise the variable list.
     """
     return variable if type(variable) == list else [variable]
+
+def chain(l: List[Type[pd.DataFrame]], j: int, element: Union[str, Type[pd.DataFrame]], func: Callable[[Union[str, Type[pd.DataFrame]],Type[pd.DataFrame]], None]) -> None:
+    """For a list of factors and either a variable or a factor, calls a given function and appends the result to a list.
+
+    Args:
+        l (List[Type[pd.DataFrame]]): A list of factors.
+        j (int): The index of the factor to be used as an argument for the function.
+        element (Union[str, Type[pd.DataFrame]]): Either a variable or a factor.
+        func (Callable[[Union[str, Type[pd.DataFrame]],Type[pd.DataFrame]], None]): A function that takes either a variable or a factor, and a factor as arguments and returns a factor.
+    """
+    l.append(func(element, l[j]))
 
 # BNReasoner class
 class BNReasoner:
@@ -31,25 +42,25 @@ class BNReasoner:
         else:
             self.bn = net
 
-    def marginalize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+    def marginalize(self, variable: str, f1: Type[pd.DataFrame]) -> Type[pd.DataFrame]:
         """ Sums-out a given variable, given a factor containing it.
         Args:
             variable (str): A string indicating the variable that needs to be summed-out
-            f1 (pd.DataFrame): A factor containing the variable that needs to be summed-out
+            f1 (Type[pd.DataFrame]): A factor containing the variable that needs to be summed-out
 
         Returns:
-            pd.DataFrame: A conditional probability table with the specified variable summed-out
+            Type[pd.DataFrame]: A conditional probability table with the specified variable summed-out
         """
         return f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable)])["p"].sum().reset_index()
     
-    def maximize(self, variable: str, f1: pd.DataFrame) -> pd.DataFrame:
+    def maximize(self, variable: str, f1: Type[pd.DataFrame]) -> Type[pd.DataFrame]:
         """ Maximizes-out a given variable, given a factor containing it.
         Args:
             variable (str): A string indicating the variable that needs to be maximized-out.
-            f1 (pd.DataFrame): A factor containing the variable that needs to be maximized-out.
+            f1 (Type[pd.DataFrame]): A factor containing the variable that needs to be maximized-out.
 
         Returns:
-            pd.DataFrame: A conditional probability table with the specified variable maximized-out and their corresponding extended factors.
+            Type[pd.DataFrame]: A conditional probability table with the specified variable maximized-out and their corresponding extended factors.
         """
         # Compute the CPT with the maximum probability for the given variable
         new = f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable) and "ext. factor" not in c])["p"].max().reset_index()
@@ -72,52 +83,49 @@ class BNReasoner:
         """
         return [(var[1], var2[1]) for var, i in zip(neighbours, range(0, len(neighbours)-1)) for var2 in neighbours[i+1:] if not any(var2[1] in sublist for sublist in nx.edges(graph, var[1]))]
         
-    def ordering(self, heuristic: str, to_eliminate: List[str]):
-        """Computes an ordering for the elimination of a list of variables. Two heuristics can be chosen to decide the order of the list: min-fill and min-degree.
+    def ordering(self, heuristic: str, to_eliminate: List[str]) -> List[str]:
+        """Computes an ordering for the elimination of a list of variables. 
+        Two heuristics can be chosen to decide the order of the list: min-fill and min-degree.
 
         Args:
-            heuristic (str): "f" for min-fill heuristic, "e" for min-edge heuristic.
+            heuristic (str): "f" for min-fill heuristic, "d" for min-degree heuristic.
             to_eliminate (List[str]): List of variables to eliminate.
 
         Returns:
             list: List of variables to eliminate, with ordering decided by min-fill(f) or min-edge(e) heuristic. 
         """
-        # list for new order and get interaction graph current BN
+        # List for new order and get interaction graph current BN
         new_order = []
-        G =  self.bn.get_interaction_graph()
-        # draw interaction graph and save
-        positions = nx.spring_layout(G)
-        nx.draw(G, positions, with_labels = True)
+        g =  self.bn.get_interaction_graph()
+        # Draw interaction graph and save it
+        positions = nx.spring_layout(g)
+        nx.draw(g, positions, with_labels = True)
         
-        # create dict with variables (key) and a list of corresponding new edges(when variable is removed)(value)
-        new_edges = {var: self.new_edges(var, list(nx.edges(G, var)), G) for var in to_eliminate}
+        # Create dict with variables (key) and a list of corresponding new edges(when variable is removed)
+        new_edges = {var: self.new_edges(var, list(nx.edges(g, var)), g) for var in to_eliminate}
 
         # Find best variable to eliminate until all variables were eliminated
         while len(to_eliminate) > 0:
             # choose heuristic
-            if heuristic == "e":
+            if heuristic == "d":
                 # make dict with [variable] -> (all edges), and get variable with least amount of edges from dict
-                all_edges = {key: list(nx.edges(G, key)) for key in to_eliminate}
+                all_edges = {key: list(nx.edges(g, key)) for key in to_eliminate}
                 next = min(all_edges.items(), key = lambda x: len(x[1]))[0]
             elif heuristic == "f":
                 # get variable whose deletion would add the fewest new interactions to the ordering
                 next = min(new_edges.items(), key = lambda x: len(x[1]))[0]
-
             # remove variable from to_eliminate, add to new_order
             to_eliminate.remove(next), new_order.append(next)
-
             # find edges that need to be connected after removing node and connect them
-            [G.add_edge(edge[0], edge[1]) for edge in new_edges[next]]
-            
+            [g.add_edge(edge[0], edge[1]) for edge in new_edges[next]]
             # update new_edges, remove all new edges that contain "next" in them, remove all new edges for variable "next"
             [new_edges[var].remove(new_edge) for var, edges in deepcopy(new_edges).items() for new_edge in edges if next in new_edge]
             del new_edges[next]
-
             # remove node from graph
-            G.remove_node(next)       
+            g.remove_node(next)       
         return new_order
 
-    def elim_var(self, variables: List[str]) -> None:
+    def elim_var(self, variables: List[str]) -> Type[pd.DataFrame]:
         """ Applies variable elimination to a BN for a given list of variables to eliminate.
 
         Args:
@@ -126,19 +134,6 @@ class BNReasoner:
         Returns:
             prior (pd.Dataframe): The resulting prior after applying variable elimination.
         """
-        def chain(l: List[pd.DataFrame], j: int, factors: List[str]):
-            """Applies part of the chain rule for a list of factors.
-
-            Args:
-                l (List[pd.DataFrame]): A list of factors.
-                j (int): The index of the factor to be multiplied with the previous one.
-                factors (List[str]): A list of CPT names to use for multiplication.
-
-            Returns:
-                pd.DataFrame: The resulting factor after multiplying the previous one with the current one.
-            """
-            l.append(self.f_multiply(l[j - 1], cpt_tables[factors[j]]))
-
         cpt_tables = self.bn.get_all_cpts()
         # before: choose variable from list
         # after: Take the first variable in the list, apply the chain rule, and marginalize the variable
@@ -148,7 +143,7 @@ class BNReasoner:
             factors = [k for k, v in cpt_tables.items() if var in v.columns]
             if len(factors) > 1:
                 s = [cpt_tables[factors[0]]]
-                [chain(s, j, factors) for j in range(1, len(factors))]
+                [chain(s, j - 1, cpt_tables[factors[j]], self.f_multiply) for j in range(1, len(factors))]
             elif len(factors) == 1:
                 factor = cpt_tables[factors[0]]
             else:
@@ -177,7 +172,7 @@ class BNReasoner:
 
         # Multiply all remaining cpts to get the final factor and return it
         s = [cpt_tables[list(cpt_tables.keys())[0]]]
-        [chain(s, j, list(cpt_tables.keys())) for j in range(1, len(list(cpt_tables.keys())))]
+        [chain(s, j, cpt_tables[key], self.f_multiply) for j, key in enumerate(list(cpt_tables.keys())[1:])]
         
         return s[-1]
         
@@ -260,15 +255,15 @@ class BNReasoner:
         """
         return self.d_separated(x, y, z)
     
-    def f_multiply(self, f1: pd.DataFrame, f2: pd.DataFrame) -> pd.DataFrame:
+    def f_multiply(self, f1: Type[pd.DataFrame], f2: Type[pd.DataFrame]) -> Type[pd.DataFrame]:
         """ Multiplies two given factors together.
 
         Args:
-            f1 (pd.DataFrame): The first specified factor.
-            f2 (pd.DataFrame): The second specified factor.
+            f1 (Type[pd.DataFrame]): The first specified factor.
+            f2 (Type[pd.DataFrame]): The second specified factor.
 
         Returns:
-            pd.DataFrame: The resulting factor from the product of f1 and f2.
+            Type[pd.DataFrame]: The resulting factor from the product of f1 and f2.
         """
         f1, f2 = (f2, f1) if len(f1) < len(f2) else (f1, f2)
         shared = list(set(f1.columns) & set(f2.columns))
@@ -280,7 +275,7 @@ class BNReasoner:
 
         Args:
             query Union[str, List[str]]: The query to be answered.
-            evidence Union[str, List[str]]: The evidence, on which basis the query can be answered.
+            evidence Union[str, List[str]]: The specified evidence.
 
         Returns:
             BayesNet: A new BN with a pruned graph and updated values.
@@ -299,12 +294,12 @@ class BNReasoner:
     def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
         """ Provides a marginal distribution given a query and an evidence
 
-            Args:
-                query: Union[str, List[str]]: query to be answered
-                evidence: Union[str, List[str]]:
+        Args:
+            query: Union[str, List[str]]: The specified query.
+            evidence: Union[str, List[str]]: The specified evidence.
 
-            Returns:
-                float: The probability of the result
+        Returns:
+            float: The probability of the result
         """
         #Reduce factors wrt e
         #Compute joint marginal
@@ -323,32 +318,37 @@ class BNReasoner:
         #else:
         return aVal/bVal
     
-    def maximum_a_posteriori(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+    def m_a_p(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
         """ Provides the maximum a posteriori probability given a query and an evidence
 
-            Args:
-                query: Union[str, List[str]]: query to be answered
-                evidence: Union[str, List[str]]:
+        Args:
+            query: Union[str, List[str]]: The specified query.
+            evidence: Union[str, List[str]]:
 
-            Returns:
-                float: The probability of the result
+        Returns:
+            float: The probability of the result
         """
-        def chain(s: List[pd.DataFrame], i: int, factors: List[pd.DataFrame], func: function):
-            s.append(func(factors[i], s[i - 1]))
-        # Multiply all CPTs
-        factors = list(bn.bn.get_all_cpts().values())
-        s = [bn.bn.get_cpt(factors[0])]
-        joint = [chain(s, i, factors, bn.f_multiply) for i in range(1, len(factors))][-1]
-        
-        # Sum out all variables
-        factors = bn.bn.get_all_variables()
-        s = [bn.marginalize(factors[0], joint)]
-        [chain(s, i, factors, bn.marginalize) for i in range(1, len(factors))]
-
+        query = check_single(query)
+        # Prune the network
+        bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
+        # Eliminate all variables except the query
+        pr_query = [bn.elim_var(bn.ordering("f", [x for x in bn.bn.get_all_variables() if x not in query]))]
+        # Max-out the query variables
+        return [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))][-1]
     
+    def m_e_p():
+        """ Provides the maximum expected probability given a query and an evidence
+
+        Args:
+            query: Union[str, List[str]]: query to be answered
+            evidence: Union[str, List[str]]:
+
+        Returns:
+            float: The probability of the result
+        """
+        pass
+
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
     x = bn.elim_var(["Winter?"])
-    print(bn.bn)
     print(x)
-    print(bn.marginal_distribution('Wet Grass?', 'Rain?'))

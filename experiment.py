@@ -2,12 +2,9 @@
 # MSc Artificial Intelligence VU - 2022
 # Knowledge Representation
 import os
-from BayesNet import BayesNet
-from BNReasoner import BNReasoner
+from BNReasoner import BNReasoner, chain
 import time
 import csv
-from typing import List
-import pandas as pd
 
 def run():
     # open file for results
@@ -28,16 +25,13 @@ def run():
 
         # perform naive summing out and measure run time
         runtime_ns = None
-        def chain(s: List[pd.DataFrame], i: int, factors: List[pd.DataFrame], func: function):
-            s.append(func(factors[i], s[i - 1]))
         start = time.time()
         # Multiply all CPTs
         factors = list(bn.bn.get_all_cpts().values())
         s = [bn.bn.get_cpt(factors[0])]
-        joint = [chain(s, i, factors, bn.f_multiply) for i in range(1, len(factors))][-1]
+        joint_pr = [[chain(s, i, factors[i + 1], bn.f_multiply) for i in range(len(factors[1:]))][-1]]
         # Sum out all variables
-        s = [bn.marginalize(to_eliminate[0], joint)]
-        [chain(s, i, to_eliminate, bn.marginalize) for i in range(1, len(to_eliminate))]
+        [chain(joint_pr, i, to_eliminate[i], bn.marginalize) for i in range(len(to_eliminate))]
         runtime_ns = time.time() - start
 
         # save results (run time) in csv
