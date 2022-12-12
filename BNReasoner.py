@@ -28,6 +28,7 @@ def chain(factors: List[Type[pd.DataFrame]], j: int, element: Union[str, Type[pd
 
 # BNReasoner class
 class BNReasoner:
+    """ A class for performing inference on a given Bayesian Network."""
     def __init__(self, net: Union[str, Type[BayesNet]]) -> None:
         """ Initializes a BNReasoner object.
         
@@ -333,7 +334,6 @@ class BNReasoner:
         query = check_single(query)
         # Prune the network
         bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
-        print(bn.bn.get_all_variables())
         # Eliminate all variables except the query
         pr_query = [bn.elim_var(bn.ordering("f", [x for x in bn.bn.get_all_variables() if x not in query]))]
         # Max-out the query variables
@@ -354,5 +354,5 @@ class BNReasoner:
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example2.BIFXML")
-    x = bn.m_e_p({'J' : True, 'O' : False})
+    x = bn.m_e_p({})
     print(x)

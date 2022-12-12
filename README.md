@@ -18,7 +18,7 @@ python3 unit_tests/unit.py
 ```
 To generate CPTs, you must first edit the path, number of files and edge/node parameters in *cpt_generator.py*. Setting only the edge parameter to True will keep a constant number of nodes equal to the NUM_NODES parameter and gradually increase the number. Setting only the nodes parameter to True will create CPTs where all nodes are independent, but gradually increase per file. Setting both parameters to True will increase both nodes and edges gradually. 
 
-The number of edges increase accordingly with Pascal's triangle, determined by the formula:
+The number of edges increase accordingly with the inner numbers of Pascal's triangle, determined by the formula:
 $$
 \begin{align}
   \text{Number of edges}\ =\ (n! / 2 * (n - 2)!)
