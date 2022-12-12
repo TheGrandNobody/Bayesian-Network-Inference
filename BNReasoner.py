@@ -353,6 +353,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example2.BIFXML")
-    x = bn.m_e_p({})
-    print(x)
+    bn = BNReasoner("testing/earthquake.BIFXML")
+    bn.bn.draw_structure()
