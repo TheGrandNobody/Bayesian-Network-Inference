@@ -320,7 +320,7 @@ class BNReasoner:
         #else:
         return aVal/bVal
     
-    def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> float:
+    def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum a posteriori probability given a query and an evidence
 
         Args:
@@ -328,29 +328,30 @@ class BNReasoner:
             evidence: Union[str, List[str]]:
 
         Returns:
-            float: The probability of the result
+            Type[pd.DataFrame]: The probability of the result
         """
         query = check_single(query)
         # Prune the network
         bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
+        print(bn.bn.get_all_variables())
         # Eliminate all variables except the query
         pr_query = [bn.elim_var(bn.ordering("f", [x for x in bn.bn.get_all_variables() if x not in query]))]
         # Max-out the query variables
         [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))]
         return pr_query[-1]
     
-    def m_e_p(self, evidence: Dict[str, bool]):
+    def m_e_p(self, evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum expected probability given some evidence
 
         Args:
             evidence: Union[str, List[str]]:
 
         Returns:
-            float: The probability of the result
+            Type[pd.DataFrame]: The probability of the result
         """
-        return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence)
+        return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence).assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example2.BIFXML")
-    x = bn.m_a_p(['I', 'J'], {'O' : True})
+    x = bn.m_e_p({'J' : True, 'O' : False})
     print(x)
