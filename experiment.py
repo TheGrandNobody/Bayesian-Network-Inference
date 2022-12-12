@@ -36,9 +36,8 @@ def run():
         s = [bn.bn.get_cpt(factors[0])]
         joint = [chain(s, i, factors, bn.f_multiply) for i in range(1, len(factors))][-1]
         # Sum out all variables
-        factors = bn.bn.get_all_variables()
-        s = [bn.marginalize(factors[0], joint)]
-        [chain(s, i, factors, bn.marginalize) for i in range(1, len(factors))]
+        s = [bn.marginalize(to_eliminate[0], joint)]
+        [chain(s, i, to_eliminate, bn.marginalize) for i in range(1, len(to_eliminate))]
         runtime_ns = time.time() - start
 
         # save results (run time) in csv
@@ -46,10 +45,3 @@ def run():
 
 if __name__== "__main__":
     pass
-
-
-
-
-
-
-

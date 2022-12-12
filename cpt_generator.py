@@ -100,6 +100,5 @@ def create_files(n: int, path: str, edges: bool, nodes: bool) -> None:
     """
     [new_file(f"{path}/testcase{i}N{math.factorial(i) / (2 * math.factorial(i - 2)) if edges else 0}E.BIFXML", i if nodes else n, edges, nodes) for i in range(2, n + 1)]
 
-
 if __name__ == "__main__":
     create_files(10, "test_cases", False, True)

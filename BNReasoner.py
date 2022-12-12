@@ -323,6 +323,29 @@ class BNReasoner:
         #else:
         return aVal/bVal
     
+    def maximum_a_posteriori(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+        """ Provides the maximum a posteriori probability given a query and an evidence
+
+            Args:
+                query: Union[str, List[str]]: query to be answered
+                evidence: Union[str, List[str]]:
+
+            Returns:
+                float: The probability of the result
+        """
+        def chain(s: List[pd.DataFrame], i: int, factors: List[pd.DataFrame], func: function):
+            s.append(func(factors[i], s[i - 1]))
+        # Multiply all CPTs
+        factors = list(bn.bn.get_all_cpts().values())
+        s = [bn.bn.get_cpt(factors[0])]
+        joint = [chain(s, i, factors, bn.f_multiply) for i in range(1, len(factors))][-1]
+        
+        # Sum out all variables
+        factors = bn.bn.get_all_variables()
+        s = [bn.marginalize(factors[0], joint)]
+        [chain(s, i, factors, bn.marginalize) for i in range(1, len(factors))]
+
+    
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example.BIFXML")
     x = bn.elim_var(["Winter?"])
