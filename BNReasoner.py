@@ -273,24 +273,23 @@ class BNReasoner:
         p = [r1.drop("p").values.tolist() + r2.drop(shared).values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
         return pd.DataFrame(p, columns=f1.drop("p", axis=1).columns.to_list() + f2.drop(shared, axis=1).columns.to_list() + ["p"])
 
-    def network_prune(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> BayesNet:
+    def network_prune(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[BayesNet]:
         """ Prunes the current network such that it can answer the given query
 
         Args:
             query Union[str, List[str]]: The query to be answered.
-            evidence Union[str, List[str]]: The specified evidence.
+            evidence Dict[str, bool]): The specified evidence.
 
         Returns:
-            BayesNet: A new BN with a pruned graph and updated values.
+            Type[BayesNet]: A new BN with a pruned graph and updated values.
         """
         graph = deepcopy(self.bn)
-        e, q = check_single(evidence), check_single(query)
-        instance = {val: True for val in e}
+        e, q = list(evidence.keys()), check_single(query)
         # Prune edges
-        [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e+q)]) for node in e]
-        [graph.update_cpt(i, graph.reduce_factor(pd.Series(instance), self.bn.get_cpt(i))) for i in graph.get_all_variables()]
+        [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e + q)]) for node in e]
+        [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), self.bn.get_cpt(i))) for i in graph.get_all_variables()]
         # Prune nodes
-        nodeList = [node for node in graph.structure.nodes if not (node in e+q or graph.get_children(node))]
+        nodeList = [node for node in graph.structure.nodes if not (node in e + q or graph.get_children(node))]
         if nodeList: graph.structure.remove_nodes_from(nodeList)
         return graph
 
@@ -321,7 +320,7 @@ class BNReasoner:
         #else:
         return aVal/bVal
     
-    def m_a_p(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+    def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> float:
         """ Provides the maximum a posteriori probability given a query and an evidence
 
         Args:
@@ -340,19 +339,18 @@ class BNReasoner:
         [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))]
         return pr_query[-1]
     
-    def m_e_p():
-        """ Provides the maximum expected probability given a query and an evidence
+    def m_e_p(self, evidence: Dict[str, bool]):
+        """ Provides the maximum expected probability given some evidence
 
         Args:
-            query: Union[str, List[str]]: query to be answered
             evidence: Union[str, List[str]]:
 
         Returns:
             float: The probability of the result
         """
-        pass
+        return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence)
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example2.BIFXML")
-    x = bn.m_a_p(['I', 'J'], 'O')
+    x = bn.m_a_p(['I', 'J'], {'O' : True})
     print(x)
