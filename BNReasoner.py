@@ -297,7 +297,7 @@ class BNReasoner:
         return graph
 
     def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
-        """Provides the marginal distribution given query and evidence
+        """ Provides a marginal distribution given a query and an evidence
 
             Args:
                 query: Union[str, List[str]]: query to be answered
