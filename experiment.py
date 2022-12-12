@@ -15,7 +15,7 @@ def run():
     writer = csv.writer(f)
     writer.writerow("variable elimination, naive summing out, node count, edge count")
     # loop through all files
-    for file in os.listdir("/home/m_rosa/AI/KR/Bayesian-Network-Inference/testing"):
+    for file in os.listdir("/home/m_rosa/AI/KR/Bayesian-Network-Inference/test_cases"):
         bn = BNReasoner(file)
         node_count = len(bn.bn.get_all_variables()) # use the file name
         edge_count = None # use the file name
