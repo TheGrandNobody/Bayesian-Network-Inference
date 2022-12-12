@@ -15,24 +15,24 @@ def check_single(variable: Union[str, List[str]]) -> List[str]:
     """
     return variable if type(variable) == list else [variable]
 
-def chain(l: List[Type[pd.DataFrame]], j: int, element: Union[str, Type[pd.DataFrame]], func: Callable[[Union[str, Type[pd.DataFrame]],Type[pd.DataFrame]], None]) -> None:
+def chain(factors: List[Type[pd.DataFrame]], j: int, element: Union[str, Type[pd.DataFrame]], func: Callable[[Union[str, Type[pd.DataFrame]],Type[pd.DataFrame]], None]) -> None:
     """For a list of factors and either a variable or a factor, calls a given function and appends the result to a list.
 
     Args:
-        l (List[Type[pd.DataFrame]]): A list of factors.
+        factors (List[Type[pd.DataFrame]]): A list of factors.
         j (int): The index of the factor to be used as an argument for the function.
         element (Union[str, Type[pd.DataFrame]]): Either a variable or a factor.
         func (Callable[[Union[str, Type[pd.DataFrame]],Type[pd.DataFrame]], None]): A function that takes either a variable or a factor, and a factor as arguments and returns a factor.
     """
-    l.append(func(element, l[j]))
+    factors.append(func(element, factors[j]))
 
 # BNReasoner class
 class BNReasoner:
-    def __init__(self, net: Union[str, BayesNet]) -> None:
+    def __init__(self, net: Union[str, Type[BayesNet]]) -> None:
         """ Initializes a BNReasoner object.
         
         Args:
-            net (Union[str, BayesNet]): Either file path of the bayesian network in BIFXML format or BayesNet object
+            net (Union[str, Type[BayesNet]]): Either file path of the bayesian network in BIFXML format or BayesNet object
         """
         if type(net) == str:
             # Constructs a BN object
@@ -76,12 +76,12 @@ class BNReasoner:
         ext_factor = pd.merge(f1, new, on=['p'], how='inner').rename(columns={variable: "ext. factor " + variable})[f"ext. factor {variable}"]
         return new.assign(**dict(f1[prev_factors]), **{f"ext. factor {variable}": ext_factor}) if prev_factors else new.assign(**{f"ext. factor {variable}": ext_factor})
 
-    def new_edges(self, neighbours: List[List[str]], graph: nx.DiGraph) -> List[List[str]]:
+    def new_edges(self, neighbours: List[List[str]], graph: Type[nx.DiGraph]) -> List[List[str]]:
         """ Returns a list of new edges that arise by removing a given variable in the graph.
 
         Args:
             neighbours (List[List[str]]): List of neighbours (both neighbours and predecessors)
-            graph (nx.DiGraph): A directed graph representing the Bayesian network
+            graph (Type[nx.DiGraph]): A directed graph representing the Bayesian network
 
         Returns:
             List[List[str]]: A list of new edges that arise by removing a given variable in the graph
@@ -109,24 +109,23 @@ class BNReasoner:
         # Create dict with variables (key) and a list of corresponding new edges(when variable is removed)
         new_edges = {var: self.new_edges(list(nx.edges(g, var)), g) for var in to_eliminate}
 
-        # Find best variable to eliminate until all variables were eliminated
+        # Find the best variable to eliminate until all variables are eliminated
         while len(to_eliminate) > 0:
-            # choose heuristic
+            # Pick a heuristic
             if heuristic == "d":
-                # make dict with [variable] -> (all edges), and get variable with least amount of edges from dict
+                # Fetch the variable with the least amount of edges
                 all_edges = {key: list(nx.edges(g, key)) for key in to_eliminate}
                 next = min(all_edges.items(), key = lambda x: len(x[1]))[0]
             elif heuristic == "f":
-                # get variable whose deletion would add the fewest new interactions to the ordering
+                # Fetch the variable whose deletion would add the fewest new interactions
                 next = min(new_edges.items(), key = lambda x: len(x[1]))[0]
-            # remove variable from to_eliminate, add to new_order
+            # Add the variable to the ordering
             to_eliminate.remove(next), new_order.append(next)
-            # find edges that need to be connected after removing node and connect them
+            # Find edges that need to be connected after removing the node
             [g.add_edge(edge[0], edge[1]) for edge in new_edges[next]]
-            # update new_edges, remove all new edges that contain "next" in them, remove all new edges for variable "next"
+            # Update new_edges, remove any edges that are no longer valid and remove the node
             [new_edges[var].remove(new_edge) for var, edges in deepcopy(new_edges).items() for new_edge in edges if next in new_edge]
             del new_edges[next]
-            # remove node from graph
             g.remove_node(next)       
         return new_order
 
@@ -179,7 +178,7 @@ class BNReasoner:
         
         return s[-1]
         
-    def has_path(self, graph: nx.DiGraph, x: str, y: List[str], visited: List[str]) -> bool:
+    def has_path(self, graph: Type[nx.DiGraph], x: str, y: List[str], visited: List[str]) -> bool:
         """ Checks (recursively) if there is a path from x to any node in y in a given graph.
         Args:
             graph (nx.DiGraph): The graph to check.
@@ -202,17 +201,17 @@ class BNReasoner:
                     return True
         return False  
 
-    def _prune(self, graph: nx.DiGraph, x: List[str], y: List[str], z: List[str])\
-          -> Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]:
+    def _prune(self, graph: Type[nx.DiGraph], x: List[str], y: List[str], z: List[str])\
+          -> Tuple[Type[nx.reportviews.NodeView], Type[nx.reportviews.OutEdgeView]]:
           """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
               and removing all edges that are outgoing from z.
           Args:
-              graph (nx.DiGraph): An acyclic directed graph representing the BN.
+              graph (Type[nx.DiGraph]): An acyclic directed graph representing the BN.
               x (List[str]): A list containing all nodes in x.
               y (List[str]): A list containing all nodes in y.
               z (List[str]): A list containing all nodes in z.
           Returns:
-              Tuple[nx.reportviews.NodeView, nx.reportviews.OutEdgeView]: A tuple containing the nodes and edges of the graph prior to pruning.
+              Tuple[Type[nx.reportviews.NodeView], Type[nx.reportviews.OutEdgeView]]: A tuple containing the nodes and edges of the graph prior to pruning.
           """
           prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
           # Remove all leaf nodes that are not in x, y or z
@@ -270,7 +269,8 @@ class BNReasoner:
         """
         f1, f2 = (f2, f1) if len(f1) < len(f2) else (f1, f2)
         shared = list(set(f1.columns) & set(f2.columns))
-        p = [r1.drop("p").values.tolist() + r2.drop(shared).values.tolist() + [r1["p"] * r2["p"]] for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
+        p = [r1.drop("p").values.tolist() + r2.drop(shared).values.tolist() + [r1["p"] * r2["p"]]\
+           for _, r1 in f1.iterrows() for _, r2 in f2.iterrows() if all(r1[var] == r2[var] for var in list(set(shared) - set(["p"])))]
         return pd.DataFrame(p, columns=f1.drop("p", axis=1).columns.to_list() + f2.drop(shared, axis=1).columns.to_list() + ["p"])
 
     def network_prune(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[BayesNet]:
@@ -349,7 +349,8 @@ class BNReasoner:
         Returns:
             Type[pd.DataFrame]: The probability of the result
         """
-        return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence).assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
+        return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence).\
+          assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
     bn = BNReasoner("testing/lecture_example2.BIFXML")
