@@ -62,19 +62,24 @@ class BNReasoner:
         Returns:
             Type[pd.DataFrame]: A conditional probability table with the specified variable maximized-out and their corresponding extended factors.
         """
-        # Compute the CPT with the maximum probability for the given variable
-        new = f1.groupby([c for c in f1.columns.tolist() if c not in ("p", variable) and "ext. factor" not in c])["p"].max().reset_index()
-            # Find any previous extended factors present in the table
+        # Check if there is only one variable left in the table
+        variables = [c for c in f1.columns.tolist() if c != "p" and "ext. factor" not in c]
+        if len(variables) == 1:
+            # If so, return the row with the maximum probability and the variable as an extended factor
+            return f1.iloc[[f1['p'].idxmax()]].drop(columns=variable).assign(**{"ext. factor "+ variable: f1[variable]})
+
+        # For tables with more than one variable, compute the CPT with the maximum probability for the given variable
+        new = f1.groupby([c for c in variables if c != variable])["p"].max().reset_index()
+        # Find any previous extended factors present in the table
         prev_factors = [c for c in f1.columns.tolist() if "ext. factor" in c]
         # Compute the new extended factor for the new CPT and add it to the table
         ext_factor = pd.merge(f1, new, on=['p'], how='inner').rename(columns={variable: "ext. factor " + variable})[f"ext. factor {variable}"]
         return new.assign(**dict(f1[prev_factors]), **{f"ext. factor {variable}": ext_factor}) if prev_factors else new.assign(**{f"ext. factor {variable}": ext_factor})
 
     def new_edges(self, neighbours: List[List[str]], graph: nx.DiGraph) -> List[List[str]]:
-        """Returns a list of new edges that arise by removing a given variable in the graph.
+        """ Returns a list of new edges that arise by removing a given variable in the graph.
 
         Args:
-            variable (str): The variable that is removed from the graph
             neighbours (List[List[str]]): List of neighbours (both neighbours and predecessors)
             graph (nx.DiGraph): A directed graph representing the Bayesian network
 
@@ -102,7 +107,7 @@ class BNReasoner:
         nx.draw(g, positions, with_labels = True)
         
         # Create dict with variables (key) and a list of corresponding new edges(when variable is removed)
-        new_edges = {var: self.new_edges(var, list(nx.edges(g, var)), g) for var in to_eliminate}
+        new_edges = {var: self.new_edges(list(nx.edges(g, var)), g) for var in to_eliminate}
 
         # Find best variable to eliminate until all variables were eliminated
         while len(to_eliminate) > 0:
@@ -141,12 +146,10 @@ class BNReasoner:
             # before: multiply all factors (f) containing the variable
             # after: Fetch all factors containing the current variable and multiply them together
             factors = [k for k, v in cpt_tables.items() if var in v.columns]
+            s = [cpt_tables[factors[0]]]
             if len(factors) > 1:
-                s = [cpt_tables[factors[0]]]
                 [chain(s, j - 1, cpt_tables[factors[j]], self.f_multiply) for j in range(1, len(factors))]
-            elif len(factors) == 1:
-                factor = cpt_tables[factors[0]]
-            else:
+            elif len(factors) != 1:
                 continue
             # before: marginalize out the variable to obtain a new factor 
             # after: Eliminate the variable from the factor
@@ -334,7 +337,8 @@ class BNReasoner:
         # Eliminate all variables except the query
         pr_query = [bn.elim_var(bn.ordering("f", [x for x in bn.bn.get_all_variables() if x not in query]))]
         # Max-out the query variables
-        return [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))][-1]
+        [chain(pr_query, i, query[i], self.maximize) for i in range(len(query))]
+        return pr_query[-1]
     
     def m_e_p():
         """ Provides the maximum expected probability given a query and an evidence
@@ -349,6 +353,6 @@ class BNReasoner:
         pass
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example.BIFXML")
-    x = bn.elim_var(["Winter?"])
+    bn = BNReasoner("testing/lecture_example2.BIFXML")
+    x = bn.m_a_p(['I', 'J'], 'O')
     print(x)
