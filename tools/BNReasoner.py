@@ -286,7 +286,7 @@ class BNReasoner:
         Returns:
             Type[BayesNet]: A new BN with a pruned graph and updated values.
         """
-        graph = self.bn
+        graph = deepcopy(self.bn)
         e, q = list(evidence.keys()), check_single(query)
         # Remove any edges outgoing from the variables in the query or evidence
         graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e])

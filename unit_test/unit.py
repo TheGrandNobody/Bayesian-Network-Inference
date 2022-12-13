@@ -57,6 +57,7 @@ if __name__ == "__main__":
     result = bn.marginalize("Wet Grass?", result)
     # Test 3a: Correct marginalization with multiple variables
     print("Marginalizing Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with both True/False probabilities equal to 2 for Rain: ")
+    print(result)
     assert result['p'][1] == 2 and result['p'][0] == 2, "Incorrect marginalization with multiple variables"
     print("Correct marginalization with multiple variables\n")
     result = bn.marginalize("Rain?", result)
