@@ -311,17 +311,17 @@ class BNReasoner:
         """
         q = check_single(query)
         newR = deepcopy(self)
-        #Reduce factors wrt e
+        # Reduce factors wrt e
         newR.bn = newR.network_prune(query, evidence)
         qReasoner = newR.bn
-        #Compute joint marginal
+        # Cmpute joint marginal
         li = newR.ordering('f',[x for x in qReasoner.get_all_variables() if x not in q])
         a = newR.elim_var(li)
         if len(evidence) == 0:
             return a.at[len(a)-1, 'p']
-        #Sum out q
+        # Sum out q
         b = sum(a['p'] )
-        #return joint marginal divided by sum out q
+        # Return joint marginal divided by sum out q
         a['p'] = a['p'] / b
         return a
     
