@@ -299,7 +299,7 @@ class BNReasoner:
             nodeList = [node for node in graph.structure.nodes if not (node in e + q or graph.get_children(node))]
         return graph
 
-    def marginal_distribution(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> float:
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides a marginal distribution given a query and an evidence
 
         Args:
@@ -307,23 +307,19 @@ class BNReasoner:
             evidence: Dict[str, bool]: The specified evidence.
 
         Returns:
-            float: The probability of the result
+            Type[pd.DataFrame]: A table containing the posterior marginal for the query given the evidence.
         """
         q = check_single(query)
-        newR = deepcopy(self)
-        # Reduce factors wrt e
-        newR.bn = newR.network_prune(query, evidence)
-        qReasoner = newR.bn
+        # Reduce factors with regards to the evidence
+        bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
         # Cmpute joint marginal
-        li = newR.ordering('f',[x for x in qReasoner.get_all_variables() if x not in q])
-        a = newR.elim_var(li)
-        if len(evidence) == 0:
-            return a.at[len(a)-1, 'p']
-        # Sum out q
-        b = sum(a['p'] )
-        # Return joint marginal divided by sum out q
-        a['p'] = a['p'] / b
-        return a
+        result = bn.elim_var(bn.ordering('f',[x for x in bn.bn.get_all_variables() if x not in q]))
+        # Before: you had two return statements, but you can do with just one
+        if len(evidence) != 0:
+            # Before: you had two lines where you created a variable b that was the sum and then you divided a['p'] by b
+            # Divide by the probability of the evidence
+            result['p'] /= sum(result['p'] )
+        return result
     
     def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum a posteriori probability given a query and an evidence
