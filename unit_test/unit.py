@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     # Test 7: Correct marginal distribution computation
     print("Test 7 (Lecture 4 examples): Marginal Distribution \n")
-    m_d = bn.marginal_distribution(['C'], {'A': True})
+    m_d = bn2.marginal_distribution(['C'], {'A': True})
     print(m_d)
     print("Marginal distribution for C given A = true should yield a probability of 0.68, 0.32:")
     

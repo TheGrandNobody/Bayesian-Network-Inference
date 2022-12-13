@@ -317,8 +317,6 @@ class BNReasoner:
         a = newR.elim_var(li)
         if len(evidence) == 0:
             return a.at[len(a)-1, 'p']
-        #Sum out q
-        b = sum(a['p'] )
         #return joint marginal divided by sum out q
         return a.at[len(a)-1, 'p']/b
     
@@ -354,5 +352,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("../testing/earthquake.BIFXML")
+    bn = BNReasoner("testing/earthquake.BIFXML")
     bn.bn.draw_structure()
