@@ -111,7 +111,7 @@ def create_files(n: int, path: str, edges: bool, nodes: bool) -> None:
         edges (bool): Whether to increase the number of edges over the files.
         nodes (bool): Whether to increase the number of nodes over the files.
     """
-    [new_file(f"{path}{i if nodes else NUM_NODES}N{math.factorial(i) / (2 * math.factorial(i - 2)) if edges else 0}E.BIFXML", i if nodes else NUM_NODES, edges, nodes) for i in range(2, n + 1)]
+    [new_file(f"{path}{i if nodes else NUM_NODES}N{int(math.factorial(i) / (2 * math.factorial(i - 2))) if edges else 0}E.BIFXML", i if nodes else NUM_NODES, edges, nodes) for i in range(2, n + 1)]
 
 if __name__ == "__main__":
     create_files(NUM_FILES, PATH, EDGES, NODES)
