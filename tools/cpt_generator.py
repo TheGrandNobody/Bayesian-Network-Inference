@@ -5,15 +5,15 @@ import random
 import math
 
 # The path to the folder in which to place the files
-PATH = "../test_cases"
+PATH = "test_cases/experiment/"
 # The number of files to create
 NUM_FILES = 10
 # Whether to create test cases with an increasing number of edges
 # The number of edges increase accordingly with Pascal's triangle (n! / 2 * (n - 2)!)
-EDGES = False
+EDGES = True
 # Whether to create test cases with an increasing number of nodes
 # If only NODES is True, the number of edges will be 0
-NODES = True
+NODES = False
 # The number of nodes to use for the test cases if NODES is False
 NUM_NODES = 10
 
