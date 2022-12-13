@@ -30,8 +30,8 @@ def run(exp_type: int)->None:
 
     # loop through all files
     for file in os.listdir("../test_cases/experiment/"):
+        print("file", file)
         bn = BNReasoner("../test_cases/experiment/" + file)
-        print(file)
         counts = [int(s) for s in file if s.isdigit()]
         node_count = counts[0]
         edge_count = counts[1]
