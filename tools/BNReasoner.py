@@ -2,6 +2,7 @@ from typing import Dict, Type, Union, List, Tuple, Callable
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
+import sys
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -288,47 +289,44 @@ class BNReasoner:
         """
         graph = deepcopy(self.bn)
         e, q = list(evidence.keys()), check_single(query)
-        # Prune edges
-        graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e+q])
+        # Remove any edges outgoing from the variables in the query or evidence
+        graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e])
         [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), graph.get_cpt(i))) for i in graph.get_all_variables()]
-        # Prune nodes
+        # Iteratively remove any leaf node that doesn't appear in the query or evidence
         nodeList = [node for node in graph.structure.nodes if not (node in e + q or graph.get_children(node))]
-        if nodeList: graph.structure.remove_nodes_from(nodeList)
+        while nodeList: 
+            graph.structure.remove_nodes_from(nodeList)
+            nodeList = [node for node in graph.structure.nodes if not (node in e + q or graph.get_children(node))]
         return graph
 
-    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides a marginal distribution given a query and an evidence
 
         Args:
             query: Union[str, List[str]]: The specified query.
-            evidence: Union[str, List[str]]: The specified evidence.
+            evidence: Dict[str, bool]: The specified evidence.
 
         Returns:
-            float: The probability of the result
+            Type[pd.DataFrame]: A table containing the posterior marginal for the query given the evidence.
         """
-        #Reduce factors wrt e
-        #Compute joint marginal
-        #Sum out q
-        #return joint marginal divided by sum out q
         q = check_single(query)
-        newR = deepcopy(self)
-        qReasoner = newR.network_prune(query, evidence)
-        print([x for x in qReasoner.get_all_variables() if x not in q])
-        a = newR.elim_var([x for x in qReasoner.get_all_variables() if x not in q])
-        aVal = a.at[len(a)-1,'p']
-        print(aVal)
-        if len(q) == 1:
-            b = newR.marginalize(query, qReasoner.get_cpt(query))
-            bVal = b.at[len(b)-1,'p']
-        #else:
-        return aVal/bVal
+        # Reduce factors with regards to the evidence
+        bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
+        # Cmpute joint marginal
+        result = bn.elim_var(bn.ordering('f',[x for x in bn.bn.get_all_variables() if x not in q]))
+        # Before: you had two return statements, but you can do with just one
+        if len(evidence) != 0:
+            # Before: you had two lines where you created a variable b that was the sum and then you divided a['p'] by b
+            # Divide by the probability of the evidence
+            result['p'] /= sum(result['p'] )
+        return result
     
     def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum a posteriori probability given a query and an evidence
 
         Args:
             query: Union[str, List[str]]: The specified query.
-            evidence: Union[str, List[str]]:
+            evidence: Dict[str, bool]
 
         Returns:
             Type[pd.DataFrame]: The probability of the result
@@ -355,5 +353,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("../testing/earthquake.BIFXML")
+    bn = BNReasoner("testing/earthquake.BIFXML")
     bn.bn.draw_structure()

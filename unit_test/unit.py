@@ -57,6 +57,7 @@ if __name__ == "__main__":
     result = bn.marginalize("Wet Grass?", result)
     # Test 3a: Correct marginalization with multiple variables
     print("Marginalizing Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with both True/False probabilities equal to 2 for Rain: ")
+    print(result)
     assert result['p'][1] == 2 and result['p'][0] == 2, "Incorrect marginalization with multiple variables"
     print("Correct marginalization with multiple variables\n")
     result = bn.marginalize("Rain?", result)
@@ -133,11 +134,19 @@ if __name__ == "__main__":
     assert res2 == ['Winter?', 'Wet Grass?', 'Sprinkler?', 'Rain?'], "Incorrect min-fill ordering"
     print("Correct min-fill ordering\n")
     print("Test 6 Complete\n")
+    input("Press Enter to continue...")
 
     # Test: Marginal Distribution
 
     # Test 7: Correct marginal distribution computation
-
+    print("Test 7 (Lecture 4 examples): Marginal Distribution \n")
+    m_d = bn2.marginal_distribution(['C'], {'A': True})
+    print("Marginal distribution for C given A = true should yield a probability of 0.68, 0.32:")
+    assert_frame_equal(m_d, pd.DataFrame({'C': pd.Series([False, True]), 'p': pd.Series([0.68, 0.32])}))
+    print("Correct marginal distribution computation\n")
+    print("Test 7 Complete\n")
+    input("Press Enter to continue...")
+    
     # Test: MAP
 
     # Test 8: Correct MAP application

@@ -98,7 +98,7 @@ def new_file(path: str, node: int, edges: bool, nodes: bool) -> None:
 
     # Create the tables
     [new_table(network, name, [] if nodes and not edges else \
-      (vars[:i] if name not in vars[:i] else vars[:i] - [name])) for i, name in enumerate(vars, start=1)]
+      (vars[:i] if name not in vars[:i] else [var for var in vars[:i] if var not in name])) for i, name in enumerate(vars, start=1)]
     
     ElementTree(root).write(open(path, "wb"))
 
