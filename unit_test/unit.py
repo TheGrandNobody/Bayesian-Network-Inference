@@ -143,8 +143,11 @@ if __name__ == "__main__":
     m_d = bn2.marginal_distribution(['C'], {'A': True})
     print(m_d)
     print("Marginal distribution for C given A = true should yield a probability of 0.68, 0.32:")
+    assert_frame_equal(m_d, pd.DataFrame({'C': pd.Series([False, True]), 'p': pd.Series([0.68, 0.32])}))
+    print("Correct marginal distribution computation\n")
+    print("Test 7 Complete\n")
+    input("Press Enter to continue...")
     
-
     # Test: MAP
 
     # Test 8: Correct MAP application
