@@ -182,7 +182,7 @@ class BayesNet:
         Visualize structure of the BN.
         """
         nx.draw(self.structure, with_labels=True, node_size=3000)
-        plt.show()
+        plt.savefig("test.png")
 
     # BASIC HOUSEKEEPING METHODS ---------------------------------------------------------------------------------------
 
