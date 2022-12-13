@@ -283,7 +283,7 @@ class BNReasoner:
         Returns:
             Type[BayesNet]: A new BN with a pruned graph and updated values.
         """
-        graph = deepcopy(self.bn)
+        graph = self.bn
         e, q = list(evidence.keys()), check_single(query)
         # Prune edges
         [graph.structure.remove_edges_from([x for x in graph.structure.edges if (x[0]==node and x[1] not in e + q)]) for node in e]
@@ -293,39 +293,36 @@ class BNReasoner:
         if nodeList: graph.structure.remove_nodes_from(nodeList)
         return graph
 
-    def marginal_distribution(self, query: Union[str, List[str]], evidence: Union[str, List[str]]) -> float:
+    def marginal_distribution(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> float:
         """ Provides a marginal distribution given a query and an evidence
 
         Args:
             query: Union[str, List[str]]: The specified query.
-            evidence: Union[str, List[str]]: The specified evidence.
+            evidence: Dict[str, bool]: The specified evidence.
 
         Returns:
             float: The probability of the result
         """
-        #Reduce factors wrt e
-        #Compute joint marginal
-        #Sum out q
-        #return joint marginal divided by sum out q
         q = check_single(query)
         newR = deepcopy(self)
+        #Reduce factors wrt e
         qReasoner = newR.network_prune(query, evidence)
-        print([x for x in qReasoner.get_all_variables() if x not in q])
-        a = newR.elim_var([x for x in qReasoner.get_all_variables() if x not in q])
-        aVal = a.at[len(a)-1,'p']
-        print(aVal)
-        if len(q) == 1:
-            b = newR.marginalize(query, qReasoner.get_cpt(query))
-            bVal = b.at[len(b)-1,'p']
-        #else:
-        return aVal/bVal
+        #Compute joint marginal
+        li = newR.ordering('f',[x for x in qReasoner.get_all_variables() if x not in q])
+        a = newR.elim_var(li)
+        if len(evidence) == 0:
+            return a.at[len(a)-1, 'p']
+        #Sum out q
+        b = sum(a['p'] )
+        #return joint marginal divided by sum out q
+        return a.at[len(a)-1, 'p']/b
     
     def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum a posteriori probability given a query and an evidence
 
         Args:
             query: Union[str, List[str]]: The specified query.
-            evidence: Union[str, List[str]]:
+            evidence: Dict[str, bool]
 
         Returns:
             Type[pd.DataFrame]: The probability of the result
@@ -353,6 +350,7 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/lecture_example2.BIFXML")
-    x = bn.m_e_p({'J' : True, 'O' : False})
+    bn = BNReasoner("testing/abc.BIFXML")
+    #x = bn.m_e_p({'J' : True, 'O' : True})
+    x = bn.marginal_distribution('C', {'A':True})
     print(x)
