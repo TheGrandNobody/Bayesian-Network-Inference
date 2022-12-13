@@ -4,6 +4,19 @@ from typing import List
 import random
 import math
 
+# The path to the folder in which to place the files
+PATH = "../test_cases"
+# The number of files to create
+NUM_FILES = 10
+# Whether to create test cases with an increasing number of edges
+# The number of edges increase accordingly with Pascal's triangle (n! / 2 * (n - 2)!)
+EDGES = False
+# Whether to create test cases with an increasing number of nodes
+# If only NODES is True, the number of edges will be 0
+NODES = True
+# The number of nodes to use for the test cases if NODES is False
+NUM_NODES = 10
+
 def generate_probability(values: List[int]) -> None:
     """ Generate two random probabilities adding up to 1 and add them to the list of probabilities.
 
@@ -98,7 +111,7 @@ def create_files(n: int, path: str, edges: bool, nodes: bool) -> None:
         edges (bool): Whether to increase the number of edges over the files.
         nodes (bool): Whether to increase the number of nodes over the files.
     """
-    [new_file(f"{path}/testcase{i}N{math.factorial(i) / (2 * math.factorial(i - 2)) if edges else 0}E.BIFXML", i if nodes else n, edges, nodes) for i in range(2, n + 1)]
+    [new_file(f"{path}{i if nodes else NUM_NODES}N{math.factorial(i) / (2 * math.factorial(i - 2)) if edges else 0}E.BIFXML", i if nodes else NUM_NODES, edges, nodes) for i in range(2, n + 1)]
 
 if __name__ == "__main__":
-    create_files(10, "test_cases", False, True)
+    create_files(NUM_FILES, PATH, EDGES, NODES)
