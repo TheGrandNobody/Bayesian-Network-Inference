@@ -133,10 +133,16 @@ if __name__ == "__main__":
     assert res2 == ['Winter?', 'Wet Grass?', 'Sprinkler?', 'Rain?'], "Incorrect min-fill ordering"
     print("Correct min-fill ordering\n")
     print("Test 6 Complete\n")
+    input("Press Enter to continue...")
 
     # Test: Marginal Distribution
 
     # Test 7: Correct marginal distribution computation
+    print("Test 7 (Lecture 4 examples): Marginal Distribution \n")
+    m_d = bn.marginal_distribution(['C'], {'A': True})
+    print(m_d)
+    print("Marginal distribution for C given A = true should yield a probability of 0.68, 0.32:")
+    
 
     # Test: MAP
 
