@@ -312,7 +312,7 @@ class BNReasoner:
         q = check_single(query)
         # Reduce factors with regards to the evidence
         bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
-        # Cmpute joint marginal
+        # Compute joint marginal
         result = bn.elim_var(bn.ordering('f',[x for x in bn.bn.get_all_variables() if x not in q]))
         # Before: you had two return statements, but you can do with just one
         if len(evidence) != 0:
