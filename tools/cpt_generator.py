@@ -5,17 +5,17 @@ import random
 import math
 
 # The path to the folder in which to place the files
-PATH = "../test_cases"
+PATH = "../test_cases/experiment/"
 # The number of files to create
-NUM_FILES = 10
+NUM_FILES = 100
 # Whether to create test cases with an increasing number of edges
 # The number of edges increase accordingly with Pascal's triangle (n! / 2 * (n - 2)!)
 EDGES = True
 # Whether to create test cases with an increasing number of nodes
 # If only NODES is True, the number of edges will be 0
-NODES = False
+NODES = True
 # The number of nodes to use for the test cases if NODES is False
-NUM_NODES = 10
+NUM_NODES = 100
 
 def generate_probability(values: List[int]) -> None:
     """ Generate two random probabilities adding up to 1 and add them to the list of probabilities.
