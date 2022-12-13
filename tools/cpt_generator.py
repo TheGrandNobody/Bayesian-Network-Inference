@@ -70,7 +70,7 @@ def new_table(network: Element, prior: str, given: List[str]) -> None:
     [new(definition, "GIVEN", g) for g in given]
     # Generate probabilities for each row
     values = []
-    [generate_probability(values) for _ in range((len(given) + 1) * (len(given) + 1))]
+    [generate_probability(values) for _ in range(((len(given) + 1) * (len(given) + 1) // 2) if len(given) > 0 else 2)]
     new(definition, "TABLE", " ".join(values))
 
 def new_file(path: str, node: int, edges: bool, nodes: bool) -> None:
