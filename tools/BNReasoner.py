@@ -322,7 +322,8 @@ class BNReasoner:
         #Sum out q
         b = sum(a['p'] )
         #return joint marginal divided by sum out q
-        return a.at[len(a)-1, 'p']/b
+        a['p'] = a['p'] / b
+        return a
     
     def m_a_p(self, query: Union[str, List[str]], evidence: Dict[str, bool]) -> Type[pd.DataFrame]:
         """ Provides the maximum a posteriori probability given a query and an evidence
@@ -356,5 +357,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("../testing/earthquake.BIFXML")
+    bn = BNReasoner("testing/earthquake.BIFXML")
     bn.bn.draw_structure()
