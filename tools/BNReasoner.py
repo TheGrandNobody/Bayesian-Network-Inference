@@ -2,6 +2,7 @@ from typing import Dict, Type, Union, List, Tuple, Callable
 from BayesNet import BayesNet, nx
 from copy import deepcopy
 import pandas as pd
+import sys
 
 # Utility functions 
 def check_single(variable: Union[str, List[str]]) -> List[str]:
@@ -311,12 +312,15 @@ class BNReasoner:
         q = check_single(query)
         newR = deepcopy(self)
         #Reduce factors wrt e
-        qReasoner = newR.network_prune(query, evidence)
+        newR.bn = newR.network_prune(query, evidence)
+        qReasoner = newR.bn
         #Compute joint marginal
         li = newR.ordering('f',[x for x in qReasoner.get_all_variables() if x not in q])
         a = newR.elim_var(li)
         if len(evidence) == 0:
             return a.at[len(a)-1, 'p']
+        #Sum out q
+        b = sum(a['p'] )
         #return joint marginal divided by sum out q
         return a.at[len(a)-1, 'p']/b
     
@@ -352,5 +356,5 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/earthquake.BIFXML")
+    bn = BNReasoner("../testing/earthquake.BIFXML")
     bn.bn.draw_structure()
