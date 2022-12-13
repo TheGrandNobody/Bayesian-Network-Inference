@@ -289,7 +289,7 @@ class BNReasoner:
         graph = self.bn
         e, q = list(evidence.keys()), check_single(query)
         # Remove any edges outgoing from the variables in the query or evidence
-        graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e+q])
+        graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e])
         [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), graph.get_cpt(i))) for i in graph.get_all_variables()]
         # Remove any leaf node that doesn't appear in the query or evidence
         nodeList = [node for node in graph.structure.nodes if not node in e + q or graph.get_children(node)]
