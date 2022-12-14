@@ -9,7 +9,7 @@ PATH = "test_cases/experiment/"
 # The number of files to create
 NUM_FILES = 10
 # Whether to create test cases with an increasing number of edges
-# The number of edges increase accordingly with Pascal's triangle (n! / 2 * (n - 2)!)
+# The number of edges increase either accordingly with Pascal's triangle (n! / 2 * (n - 2)!) or linearly with the nodes
 EDGES = True
 # Whether to create test cases with an increasing number of nodes
 # If only NODES is True, the number of edges will be 0
