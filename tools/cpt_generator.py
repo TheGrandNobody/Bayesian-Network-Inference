@@ -18,6 +18,8 @@ NODES = True
 NUM_NODES = 10
 # Whether to increase the number of edges according to Pascal's triangle
 PASCAL = False
+# Whether to have a equal ratio of root nodes to normal nodes.
+DIV = True
 
 def generate_probability(values: List[int]) -> None:
     """ Generate two random probabilities adding up to 1 and add them to the list of probabilities.
@@ -122,4 +124,4 @@ def create_files(n: int, path: str, edges: bool, nodes: bool, pascal: bool, div:
          i if nodes else NUM_NODES, edges, nodes, pascal) for i in range(2, n + 1)]
 
 if __name__ == "__main__":
-    create_files(NUM_FILES, PATH, EDGES, NODES, PASCAL)
+    create_files(NUM_FILES, PATH, EDGES, NODES, PASCAL, DIV)
