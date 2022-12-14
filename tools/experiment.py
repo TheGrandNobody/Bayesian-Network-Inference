@@ -18,9 +18,9 @@ def run(exp_type: int)->None:
     """
     # open file for results
     if exp_type == 1:
-        f = open('../results/results_var_elim.csv', 'w')
+        f = open('results/results_var_elim.csv', 'w')
     else:
-        f = open('../results/results_heuristic.csv', 'w')
+        f = open('results/results_heuristic.csv', 'w')
 
     writer = csv.writer(f)
     if exp_type == 1:
@@ -29,13 +29,13 @@ def run(exp_type: int)->None:
         writer.writerow(["min-fill", "min-degree", "node count", "edge count"])
 
     # loop through all files
-    for file in os.listdir("../test_cases/experiment/"):
-        bn = BNReasoner("../test_cases/experiment/" + file)
+    for file in os.listdir("test_cases/experiment/"):
         print(file)
+        bn = BNReasoner("test_cases/experiment/" + file)
         counts = [int(s) for s in file if s.isdigit()]
         node_count = counts[0]
         edge_count = counts[1]
-        to_eliminate = bn.bn.get_all_variables()[:len(bn.bn.get_all_variables()) -1]
+        to_eliminate = bn.bn.get_all_variables()[:-1]
 
         if exp_type == 1:
             # perform variable elimination and measure runtime
