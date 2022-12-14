@@ -289,9 +289,7 @@ class BNReasoner:
         bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
         # Compute joint marginal
         result = bn.elim_var(bn.ordering('f',[x for x in bn.bn.get_all_variables() if x not in q]))
-        # Before: you had two return statements, but you can do with just one
         if len(evidence) != 0:
-            # Before: you had two lines where you created a variable b that was the sum and then you divided a['p'] by b
             # Divide by the probability of the evidence
             result['p'] /= sum(result['p'] )
         return result
