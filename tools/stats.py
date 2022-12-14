@@ -1,12 +1,12 @@
 # implements statistics for 2 experiments
 
 # imports
-import os
-import csv
 import pandas as pd
 import statistics as stats
-from scipy.stats import iqr
+from scipy.stats import iqr, s
 from pingouin import ttest, wilcoxon, homoscedasticity, normality
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Some functions to return percentiles to use in descriptive statistics later
 
@@ -35,7 +35,7 @@ def run_heuristics(file):
     print(data)
 
     # give desctriptive stats parametric
-    print("parametric\n", data.agg(['mean', 'std']).round(4))
+    print("parametric\n", data.agg(['mean', 'std', "min", "max"]).round(4))
 
 
     # give descriptive stats non-parametric
@@ -53,6 +53,20 @@ def run_heuristics(file):
     # test assumptions logistic regression
 
     # perform logistic regression 
+
+    # bar graph/boxplot for t-test
+    # histogram
+    stdev = []
+    plt.clf()
+    print(data.drop(["edge count","node count"], axis = 1))
+    plot = sns.barplot(data=data.drop(["edge count","node count"], axis = 1), color="gray")
+    plt.errorbar(data["min-fill"], data["min-degree"], xerr=[])
+
+    plt.savefig('histogram.png')
+
+
+
+
     
 
 
