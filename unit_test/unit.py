@@ -5,7 +5,7 @@ import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
 if __name__ == "__main__": 
-    bn = BNReasoner("testing/lecture_example.BIFXML")
+    bn = BNReasoner("test_cases/testing/lecture_example.BIFXML")
 
     # Test: Network Pruning
     graph = bn.network_prune("Wet Grass?", {"Winter?": True, "Rain?": False})
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     input("Press Enter to continue...")
 
     # Test: d-Separation/Independence
-    bn1 = BNReasoner("testing/earthquake.BIFXML")
+    bn1 = BNReasoner("test_cases/testing/earthquake.BIFXML")
 
     # Test 2a: Correct independence inference (using d-Separation) with list of Y/X
     print("Test 2 (Lecture 2 examples): d-Separation/Independence \n")
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     # Test 5: Correct factor multiplication and variable elimination
     print("Test 5 (Lecture 3 examples): Factor Multiplication/Variable Elimination \n")
-    bn2 = BNReasoner("testing/abc.BIFXML")
+    bn2 = BNReasoner("test_cases/testing/abc.BIFXML")
     # Test 5a: Correct variable elimination + factor multiplication with tables containing similar variables
     result = bn2.elim_var(['A', 'B'])
     print("Eliminating A and B to get C should yield a table with .624, .376")
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Test 6: Correct Min-degree/Min-fill ordering heuristics
     print("Test 6 (Lecture 3/4 examples): Ordering \n")
-    bn3 = BNReasoner("testing/lecture_example2.BIFXML")
+    bn3 = BNReasoner("test_cases/testing/lecture_example2.BIFXML")
     res1 = bn3.ordering("d", ['X', 'Y', 'O', 'J'])
     res2 = bn.ordering("f", ['Winter?', 'Wet Grass?', 'Rain?', 'Sprinkler?'])
     # Test 6a: Correct min-degree ordering
