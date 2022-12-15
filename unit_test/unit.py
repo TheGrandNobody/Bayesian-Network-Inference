@@ -75,13 +75,13 @@ if __name__ == "__main__":
     print("Test 4 (Lecture 3 examples): Maximizing-out \n")
     result = bn.maximize("Wet Grass?", bn.bn.get_cpt("Wet Grass?"))
     # Test 4a: Correct maximizing-out one variable
-    print("Maximizing out Wet Grass from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95, .9, .8 and .1")
+    print("Maximizing out Wet Grass from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95, .9, .8 and 1")
     assert_frame_equal(result.drop(columns='ext. factor Wet Grass?'), pd.DataFrame({'Sprinkler?': pd.Series([False, False, True, True]),\
        'Rain?': pd.Series([False, True, False, True]), 'p': pd.Series([1, 0.8, 0.9, 0.95])}))
     print('Correct maximizing-out with one variable\n')
     # Test 4b: Correct maximizing-out with multiple variables
     result = bn.maximize("Sprinkler?", result)
-    print("Maximizing out Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95 and .8")
+    print("Maximizing out Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with 1 and .95")
     assert_frame_equal(result.drop(columns=['ext. factor Sprinkler?', 'ext. factor Wet Grass?']), pd.DataFrame({'Rain?': pd.Series([False, True]), 'p': pd.Series([1, 0.95])}))
     print('Correct maximizing-out with multiple variables\n')
     # Test 4c: Maximizing-out keeps track of the extended factors

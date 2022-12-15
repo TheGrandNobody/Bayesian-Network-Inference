@@ -38,12 +38,12 @@ def run(exp_type: int)->None:
         to_eliminate = bn.bn.get_all_variables()[:-1]
 
         if exp_type == 1:
-            # perform variable elimination and measure runtime
+            # Perform variable elimination and measure runtime
             start = time.time()
             bn.elim_var(bn.ordering("f", to_eliminate))
             runtime_1 = time.time() - start 
-
-            # perform naive summing out and measure run time
+            
+            # Perform naive summing out and measure run time
             start = time.time()
             # Multiply all CPTs
             factors = list(bn.bn.get_all_cpts().keys())
@@ -53,16 +53,16 @@ def run(exp_type: int)->None:
             [chain(joint_pr, i, to_eliminate[i], bn.marginalize) for i in range(len(to_eliminate))]
             runtime_2 = time.time() - start
         else:
-            # measure time for min-fill
+            # Measure time for min-fill
             start = time.time()
             bn.elim_var(bn.ordering("f", to_eliminate))
-            runtime_1 = time.time() - start 
-            #measure time for min-degree
+            runtime_1 = time.time() - start
+            # Measure time for min-degree
             start = time.time()
             bn.elim_var(bn.ordering("d", to_eliminate))
-            runtime_2 = time.time() - start 
+            runtime_2 = time.time() - start
 
-        # save results (run time) in csv
+        # Save results (run time) in csv
         writer.writerow([runtime_1, runtime_2,node_count, edge_count])
 
 if __name__== "__main__":
