@@ -5,6 +5,7 @@ import os
 from BNReasoner import BNReasoner, chain
 import time
 import csv
+import re
 
 def run(exp_type: int)->None:
     """Measures computing time for two experiments. The first experiment measures for naive summing out versus variable elimination.
@@ -17,10 +18,7 @@ def run(exp_type: int)->None:
         If anything else given then 1, min-fill versus min-degree.
     """
     # open file for results
-    if exp_type == 1:
-        f = open('../results/results_var_elim.csv', 'w')
-    else:
-        f = open('../results/results_heuristic.csv', 'w')
+    f = open('../results/_test.csv', 'w')
 
     writer = csv.writer(f)
     if exp_type == 1:
@@ -32,7 +30,8 @@ def run(exp_type: int)->None:
     for file in os.listdir("../test_cases/experiment/"):
         print(file)
         bn = BNReasoner("../test_cases/experiment/" + file)
-        counts = [int(s) for s in file if s.isdigit()]
+        counts = re.split("[E N]", file)
+        print(counts)
         node_count = counts[0]
         edge_count = counts[1]
         to_eliminate = bn.bn.get_all_variables()[:-1]
@@ -52,15 +51,26 @@ def run(exp_type: int)->None:
             # Sum out all variables
             [chain(joint_pr, i, to_eliminate[i], bn.marginalize) for i in range(len(to_eliminate))]
             runtime_2 = time.time() - start
+        elif exp_type == 2:
+            # measure time for min-fill
+            ordering = bn.ordering("f", to_eliminate)
+            start = time.time()
+            bn.elim_var(ordering)
+            runtime_1 = time.time() - start 
+            #measure time for min-degree
+            ordering = bn.ordering("d", to_eliminate)
+            start = time.time()
+            bn.elim_var(ordering)
+            runtime_2 = time.time() - start 
         else:
-            # Measure time for min-fill
             start = time.time()
-            bn.elim_var(bn.ordering("f", to_eliminate))
-            runtime_1 = time.time() - start
-            # Measure time for min-degree
+            ordering = bn.ordering("f", to_eliminate)
+            runtime_1 = time.time() - start 
+
             start = time.time()
-            bn.elim_var(bn.ordering("d", to_eliminate))
-            runtime_2 = time.time() - start
+            ordering = bn.ordering("d", to_eliminate)
+            runtime_2 = time.time() - start 
+
 
         # Save results (run time) in csv
         writer.writerow([runtime_1, runtime_2,node_count, edge_count])
