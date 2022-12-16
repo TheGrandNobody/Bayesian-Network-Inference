@@ -83,6 +83,7 @@ def new_file(path: str, node: int, edge: int, edges: bool, nodes: bool, pascal: 
     Args:
         path (str): The path of the folder to add the file to.
         node (int): The number of nodes present for this BN.
+        edge (int): The number of edges present for this BN (if only edges increase).
         edges (bool): If this is an edge-only test case (or both).
         nodes (bool): If this is a node-only test case (or both).
         pascal (bool): If the number of edges should increase according to Pascal's triangle.
