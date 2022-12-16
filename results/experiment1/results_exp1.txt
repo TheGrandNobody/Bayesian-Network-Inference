@@ -1,0 +1,58 @@
+                                  OLS Regression Results                                 
+=========================================================================================
+Dep. Variable:     variable elimination   R-squared (uncentered):                   0.955
+Model:                              OLS   Adj. R-squared (uncentered):              0.952
+Method:                   Least Squares   F-statistic:                              389.0
+Date:                  Thu, 15 Dec 2022   Prob (F-statistic):                    1.43e-25
+Time:                          16:48:37   Log-Likelihood:                          114.79
+No. Observations:                    39   AIC:                                     -225.6
+Df Residuals:                        37   BIC:                                     -222.3
+Df Model:                             2                                                  
+Covariance Type:              nonrobust                                                  
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+edge count     0.0040      0.001      6.564      0.000       0.003       0.005
+node count     0.0049      0.000     14.776      0.000       0.004       0.006
+==============================================================================
+Omnibus:                       20.253   Durbin-Watson:                   2.095
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               34.897
+Skew:                           1.350   Prob(JB):                     2.64e-08
+Kurtosis:                       6.767   Cond. No.                         2.97
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+==============================================================================
+
+DESCRIPTIVE DATA 
+
+       variable elimination  naive summing out  node count  edge count
+mean                1.5240             8.1307      7.8636      6.2727
+std                 7.4532            18.5120      3.8494      9.6022
+min                 0.0067             0.0047      2.0000      0.0000
+max                48.3055            88.6704     15.0000     45.0000
+non parametric data
+         variable elimination  naive summing out  node count  edge count
+median              0.058510           0.384782        7.50         3.5
+min                 0.006748           0.004702        2.00         0.0
+q25                 0.032673           0.056639        5.00         0.0
+q75                 0.073196           3.735591       10.25         7.0
+max                48.305529          88.670363       15.00        45.0
+==================================================================================================================================================
+STATS
+               W      pval  equal_var
+levene  4.765281  0.031764      False
+                             W          pval  normal
+variable elimination  0.205373  4.598859e-14   False
+               T  dof alternative     p-val            CI95%   cohen-d  BF10    power
+T-test -2.505937   43   two-sided  0.016077  [-11.92, -1.29]  0.468192  2.63  0.85895
+          W-val alternative     p-val       RBC      CLES
+Wilcoxon  139.0   two-sided  0.000033 -0.719192  0.277893
+
+Optimization terminated successfully.
+         Current function value: 0.139993
+         Iterations 7
+
+===================================================================================================================================================
