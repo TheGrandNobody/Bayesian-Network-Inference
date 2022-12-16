@@ -72,13 +72,13 @@ def testing(file):
 
 ################################################################################################################################################### 
     
-def regression (file, dependent, independent):
+def regression (file, dependent, independent, transform):
     """_summary_
 
     Args:
-        file (_type_): _description_
-        var (string): heuristic
-        independent (_type_): _description_
+        file (csv): give file with data from experiment.py
+        dependent(str): "min-fill" or "min-degree"
+        independent (str): independent variables ("node count or edge count")
     """
     # read data  and put in pandas dataframe
     data = pd.read_csv("../results/"+ file)
@@ -86,13 +86,16 @@ def regression (file, dependent, independent):
     # # perform linear regression 
 
     # remove where edges are 0 (for regression with amount of edges) or only keep where edges are 0 (for regression with amount of nodes)
-    data = data[data[independent] != 0]
-    # data = data[data[independent] == 0]
+    if independent == "edge count":
+        data = data[data[independent] != 0]
+    elif independent == "node count":
+        data = data[data[independent] == 0]
     
     print(data)
-    # transform data (only for regression with amount of edges)
-    # data[dependent] = np.log(data[dependent])
-    # test_data[dependent] = np.log(test_data[dependent])
+
+    if transform == True:
+        # transform data (only for regression with amount of edges)
+        data[dependent] = np.log(data[dependent])
 
     # defining the dependent and independent variables
     xtrain = data[[independent]]
@@ -121,4 +124,4 @@ def regression (file, dependent, independent):
 
 if __name__== "__main__":
     testing("exp2_v.csv", "exp2_v_test.csv")
-    regression("exp2_v.csv", "min-fill", "node count")
+    regression("exp2_v.csv", "min-fill", "node count", transform = True)
