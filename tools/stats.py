@@ -72,10 +72,10 @@ def testing(file):
 
 ################################################################################################################################################### 
     
-def regression (file):
+def regression (file, exp2):
     # read data  and put in pandas dataframe
     data = pd.read_csv("../results/"+ file)
-    
+
     # # perform linear regression 
 
     # remove where edges are 0 (for regression with amount of edges) or only keep where edges are 0 (for regression with amount of nodes)
@@ -114,3 +114,4 @@ def regression (file):
 
 if __name__== "__main__":
     testing("exp2_v.csv", "exp2_v_test.csv")
+    
