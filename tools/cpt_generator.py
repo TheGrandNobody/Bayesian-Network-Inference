@@ -105,7 +105,7 @@ def new_file(path: str, node: int, edge: int, edges: bool, nodes: bool, pascal: 
     # Create the tables
     [new_table(network, name, [] if nodes and not edges else \
       [var for var in vars[:i] if var not in name] if pascal\
-      else [vars[i-1]] if i < ((len(vars) - 1 if edge == node else edge) // (2 if div else 1)) else []) for i, name in enumerate(vars[1:], start=1)]
+      else [vars[i-1]] if i > 0 else []) for i, name in enumerate(vars, start=0)]
     
     ElementTree(root).write(open(path, "wb"))
 
