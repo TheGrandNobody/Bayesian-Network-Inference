@@ -7,19 +7,19 @@ import math
 # The path to the folder in which to place the files
 PATH = "test_cases/experiment/"
 # The number of files to create
-NUM_FILES = 15
+NUM_FILES = 2
 # Whether to create test cases with an increasing number of edges
 # The number of edges increase either accordingly with Pascal's triangle (n! / 2 * (n - 2)!) or linearly with the nodes
 EDGES = True
 # Whether to create test cases with an increasing number of nodes
 # If only NODES is True, the number of edges will be 0
-NODES = True
+NODES = False
 # The number of nodes to use for the test cases if NODES is False
-NUM_NODES = 15
+NUM_NODES = 2
 # Whether to increase the number of edges according to Pascal's triangle
 PASCAL = False
 # Whether to have a equal ratio of root nodes to normal nodes.
-DIV = True
+DIV = False
 
 def generate_probability(values: List[int]) -> None:
     """ Generate two random probabilities adding up to 1 and add them to the list of probabilities.
@@ -77,7 +77,7 @@ def new_table(network: Element, prior: str, given: List[str]) -> None:
     [generate_probability(values) for _ in range((2 ** (len(given) + 1) // 2))]
     new(definition, "TABLE", " ".join(values))
 
-def new_file(path: str, node: int, edges: bool, nodes: bool, pascal: bool, div: bool) -> None:
+def new_file(path: str, node: int, edge: int, edges: bool, nodes: bool, pascal: bool, div: bool) -> None:
     """ Create a new BIFXML file for a given number of nodes and a given configuration.
 
     Args:
@@ -105,7 +105,7 @@ def new_file(path: str, node: int, edges: bool, nodes: bool, pascal: bool, div: 
     # Create the tables
     [new_table(network, name, [] if nodes and not edges else \
       [var for var in vars[:i] if var not in name] if pascal\
-      else [vars[i]] if i < len(vars) // (2 if div else 1) else []) for i, name in enumerate(vars, start=1)]
+      else [vars[i]] if i < len(vars) // (2 if div else 1) else []) for i, name in enumerate(vars[-edge if (edges and not nodes) else 1:], start=1)]
     
     ElementTree(root).write(open(path, "wb"))
 
@@ -120,8 +120,8 @@ def create_files(n: int, path: str, edges: bool, nodes: bool, pascal: bool, div:
         pascal (bool): Whether to increase the number of edges over the files using Pascal's triangle.
         div (bool): Whether to have an equal number of root nodes and other nodes.
     """
-    [new_file(f"{path}{i if nodes else NUM_NODES}N{int(math.factorial(i) / (2 * math.factorial(i - 2))if pascal else (i if nodes else NUM_NODES) if not div else (i // 2 if nodes else NUM_NODES // 2)) if edges else 0}E.BIFXML",\
-         i if nodes else NUM_NODES, edges, nodes, pascal, div) for i in range(2, n + 1)]
+    [new_file(f"{path}{i if nodes else NUM_NODES}N{int(math.factorial(i) / (2 * math.factorial(i - 2))) if pascal else i if not div else i // 2  if edges else 0}E.BIFXML",\
+         i if nodes else NUM_NODES, i, edges, nodes, pascal, div) for i in range(2, n + 1)]
 
 if __name__ == "__main__":
     create_files(NUM_FILES, PATH, EDGES, NODES, PASCAL, DIV)
