@@ -7,7 +7,7 @@ import math
 # The path to the folder in which to place the files
 PATH = "test_cases/experiment/"
 # The number of files to create
-NUM_FILES = 15
+NUM_FILES = 2
 # Whether to create test cases with an increasing number of edges
 # The number of edges increase either accordingly with Pascal's triangle (n! / 2 * (n - 2)!) or linearly with the nodes
 EDGES = True
@@ -15,7 +15,7 @@ EDGES = True
 # If only NODES is True, the number of edges will be 0
 NODES = False
 # The number of nodes to use for the test cases if NODES is False
-NUM_NODES = 15
+NUM_NODES = 2
 # Whether to increase the number of edges according to Pascal's triangle
 PASCAL = False
 # Whether to have a equal ratio of root nodes to normal nodes.
@@ -106,7 +106,7 @@ def new_file(path: str, node: int, edge: int, edges: bool, nodes: bool, pascal: 
     # Create the tables
     [new_table(network, name, [] if nodes and not edges else \
       [var for var in vars[:i] if var not in name] if pascal\
-      else [vars[i]] if i < len(vars) - 1 // (2 if div else 1) else []) for i, name in enumerate(vars[-edge if (edges and not nodes) else 1:], start=1)]
+      else [vars[i-1]] if i < len(vars) - 1 // (2 if div else 1) else []) for i, name in enumerate(vars[-edge if (edges and not nodes) else 1:], start=1)]
     
     ElementTree(root).write(open(path, "wb"))
 
