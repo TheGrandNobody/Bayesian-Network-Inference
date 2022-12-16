@@ -72,25 +72,32 @@ def testing(file):
 
 ################################################################################################################################################### 
     
-def regression (file, exp2):
+def regression (file, dependent, independent):
+    """_summary_
+
+    Args:
+        file (_type_): _description_
+        var (string): heuristic
+        independent (_type_): _description_
+    """
     # read data  and put in pandas dataframe
     data = pd.read_csv("../results/"+ file)
 
     # # perform linear regression 
 
     # remove where edges are 0 (for regression with amount of edges) or only keep where edges are 0 (for regression with amount of nodes)
-    data = data[data["edge count"] != 0]
-    # data = data[data["edge count"] == 0]
+    data = data[data[independent] != 0]
+    # data = data[data[independent] == 0]
     
     print(data)
     # transform data (only for regression with amount of edges)
-    # data[exp_2] = np.log(data[exp_2])
-    # test_data[exp_2] = np.log(test_data[exp_2])
+    # data[dependent] = np.log(data[dependent])
+    # test_data[dependent] = np.log(test_data[dependent])
 
     # defining the dependent and independent variables
-    xtrain = data[['edge count']]
+    xtrain = data[[independent]]
     xtrain = sm.add_constant(xtrain)
-    ytrain = data[[exp_2]]
+    ytrain = data[[dependent]]
 
     # regression
     log_reg = sm.OLS(ytrain, xtrain).fit()
@@ -99,7 +106,7 @@ def regression (file, exp2):
     # graph model (predictions versus actual data)
 
     # what to plot
-    predicted_counts = data["edge count"]
+    predicted_counts = data[independent]
     actual_counts = ytrain
 
     # graph
@@ -114,4 +121,4 @@ def regression (file, exp2):
 
 if __name__== "__main__":
     testing("exp2_v.csv", "exp2_v_test.csv")
-    
+    regression("exp2_v.csv", "min-fill", "node count")
