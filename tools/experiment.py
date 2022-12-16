@@ -18,7 +18,7 @@ def run(exp_type: int)->None:
         If anything else given then 1, min-fill versus min-degree.
     """
     # open file for results
-    f = open('../results/_test.csv', 'w')
+    f = open('../results/exp2_v.csv', 'w')
 
     writer = csv.writer(f)
     if exp_type == 1:
