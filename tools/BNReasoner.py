@@ -205,25 +205,6 @@ class BNReasoner:
                     return True
         return False  
 
-    def _prune(self, graph: Type[nx.DiGraph], x: List[str], y: List[str], z: List[str])\
-          -> Tuple[Type[nx.reportviews.NodeView], Type[nx.reportviews.OutEdgeView]]:
-          """ Applies the d-separation algorithm to a graph by pruning all leaf nodes not in x, y or z
-              and removing all edges that are outgoing from z.
-          Args:
-              graph (Type[nx.DiGraph]): An acyclic directed graph representing the BN.
-              x (List[str]): A list containing all nodes in x.
-              y (List[str]): A list containing all nodes in y.
-              z (List[str]): A list containing all nodes in z.
-          Returns:
-              Tuple[Type[nx.reportviews.NodeView], Type[nx.reportviews.OutEdgeView]]: A tuple containing the nodes and edges of the graph prior to pruning.
-          """
-          prev_n, prev_e = deepcopy(graph.nodes), deepcopy(graph.edges)
-          # Remove all leaf nodes that are not in x, y or z
-          graph.remove_nodes_from([n for n in graph.nodes if n not in x + y + z and not any(True for _ in graph.neighbors(n))])
-          # Remove all edges that are outgoing from z
-          graph.remove_edges_from(list(graph.edges(z)))
-          return list(prev_n), list(prev_e)
-
     def d_separated(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
         """ Checks whether x is d-separated from y given z.
 
@@ -237,16 +218,10 @@ class BNReasoner:
         """
         # Check if z is a list or a single variable
         x, y, z = check_single(x), check_single(y), check_single(z)
-        # Create a copy of the BN we can use for pruning
-        graph = deepcopy(self.bn.structure)
-
-        # Apply the d-separation algorithm exhaustively
-        prev_nodes, prev_edges = self._prune(graph, x, y, z)
-        while list(graph.nodes) != prev_nodes and list(graph.edges) != prev_edges:
-            prev_nodes, prev_edges = self._prune(graph, x, y, z)
-        
+        # Prune the network with X and Y as the query and Z as the evidence
+        bn = self.network_prune(x + y, {k: True for k in z})
         # x is d-separated from y given z if there is no path from x to y in the pruned graph
-        return not any(self.has_path(graph, u, y, [u]) for u in x)
+        return not any(self.has_path(bn.structure, u, y, [u]) for u in x)
     
     def independent(self, x:  Union[str, List[str]], y:  Union[str, List[str]], z: Union[str, List[str]]) -> bool:
         """ Checks whether x is independent from y given z.
@@ -289,7 +264,7 @@ class BNReasoner:
         """
         graph = deepcopy(self.bn)
         e, q = list(evidence.keys()), check_single(query)
-        # Remove any edges outgoing from the variables in the query or evidence
+        # Remove any edges outgoing from the variables in the evidence
         graph.structure.remove_edges_from([x for x in graph.structure.edges if x[0] in e])
         [graph.update_cpt(i, graph.reduce_factor(pd.Series(evidence), graph.get_cpt(i))) for i in graph.get_all_variables()]
         # Iteratively remove any leaf node that doesn't appear in the query or evidence
@@ -314,9 +289,7 @@ class BNReasoner:
         bn = BNReasoner(deepcopy(self).network_prune(query, evidence))
         # Compute joint marginal
         result = bn.elim_var(bn.ordering('f',[x for x in bn.bn.get_all_variables() if x not in q]))
-        # Before: you had two return statements, but you can do with just one
         if len(evidence) != 0:
-            # Before: you had two lines where you created a variable b that was the sum and then you divided a['p'] by b
             # Divide by the probability of the evidence
             result['p'] /= sum(result['p'] )
         return result

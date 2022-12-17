@@ -5,7 +5,7 @@ import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
 if __name__ == "__main__": 
-    bn = BNReasoner("testing/lecture_example.BIFXML")
+    bn = BNReasoner("test_cases/testing/lecture_example.BIFXML")
 
     # Test: Network Pruning
     graph = bn.network_prune("Wet Grass?", {"Winter?": True, "Rain?": False})
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     input("Press Enter to continue...")
 
     # Test: d-Separation/Independence
-    bn1 = BNReasoner("testing/earthquake.BIFXML")
+    bn1 = BNReasoner("test_cases/testing/earthquake.BIFXML")
 
     # Test 2a: Correct independence inference (using d-Separation) with list of Y/X
     print("Test 2 (Lecture 2 examples): d-Separation/Independence \n")
@@ -75,13 +75,13 @@ if __name__ == "__main__":
     print("Test 4 (Lecture 3 examples): Maximizing-out \n")
     result = bn.maximize("Wet Grass?", bn.bn.get_cpt("Wet Grass?"))
     # Test 4a: Correct maximizing-out one variable
-    print("Maximizing out Wet Grass from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95, .9, .8 and .1")
+    print("Maximizing out Wet Grass from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95, .9, .8 and 1")
     assert_frame_equal(result.drop(columns='ext. factor Wet Grass?'), pd.DataFrame({'Sprinkler?': pd.Series([False, False, True, True]),\
        'Rain?': pd.Series([False, True, False, True]), 'p': pd.Series([1, 0.8, 0.9, 0.95])}))
     print('Correct maximizing-out with one variable\n')
     # Test 4b: Correct maximizing-out with multiple variables
     result = bn.maximize("Sprinkler?", result)
-    print("Maximizing out Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with .95 and .8")
+    print("Maximizing out Wet Grass and Sprinkler from (Wet Grass | Rain and Sprinkler) should yield\n a table with 1 and .95")
     assert_frame_equal(result.drop(columns=['ext. factor Sprinkler?', 'ext. factor Wet Grass?']), pd.DataFrame({'Rain?': pd.Series([False, True]), 'p': pd.Series([1, 0.95])}))
     print('Correct maximizing-out with multiple variables\n')
     # Test 4c: Maximizing-out keeps track of the extended factors
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     # Test 5: Correct factor multiplication and variable elimination
     print("Test 5 (Lecture 3 examples): Factor Multiplication/Variable Elimination \n")
-    bn2 = BNReasoner("testing/abc.BIFXML")
+    bn2 = BNReasoner("test_cases/testing/abc.BIFXML")
     # Test 5a: Correct variable elimination + factor multiplication with tables containing similar variables
     result = bn2.elim_var(['A', 'B'])
     print("Eliminating A and B to get C should yield a table with .624, .376")
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Test 6: Correct Min-degree/Min-fill ordering heuristics
     print("Test 6 (Lecture 3/4 examples): Ordering \n")
-    bn3 = BNReasoner("testing/lecture_example2.BIFXML")
+    bn3 = BNReasoner("test_cases/testing/lecture_example2.BIFXML")
     res1 = bn3.ordering("d", ['X', 'Y', 'O', 'J'])
     res2 = bn.ordering("f", ['Winter?', 'Wet Grass?', 'Rain?', 'Sprinkler?'])
     # Test 6a: Correct min-degree ordering

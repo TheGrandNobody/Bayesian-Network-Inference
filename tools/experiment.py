@@ -5,6 +5,7 @@ import os
 from BNReasoner import BNReasoner, chain
 import time
 import csv
+import re
 
 def run(exp_type: int)->None:
     """Measures computing time for two experiments. The first experiment measures for naive summing out versus variable elimination.
@@ -17,10 +18,7 @@ def run(exp_type: int)->None:
         If anything else given then 1, min-fill versus min-degree.
     """
     # open file for results
-    if exp_type == 1:
-        f = open('../results/results_var_elim.csv', 'w')
-    else:
-        f = open('../results/results_heuristic.csv', 'w')
+    f = open('../results/exp2_v.csv', 'w')
 
     writer = csv.writer(f)
     if exp_type == 1:
@@ -30,20 +28,21 @@ def run(exp_type: int)->None:
 
     # loop through all files
     for file in os.listdir("../test_cases/experiment/"):
-        print("file", file)
+        print(file)
         bn = BNReasoner("../test_cases/experiment/" + file)
-        counts = [int(s) for s in file if s.isdigit()]
+        counts = re.split("[E N]", file)
+        print(counts)
         node_count = counts[0]
         edge_count = counts[1]
-        to_eliminate = bn.bn.get_all_variables()[:len(bn.bn.get_all_variables()) -1]
+        to_eliminate = bn.bn.get_all_variables()[:-1]
 
         if exp_type == 1:
-            # perform variable elimination and measure runtime
+            # Perform variable elimination and measure runtime
             start = time.time()
             bn.elim_var(bn.ordering("f", to_eliminate))
             runtime_1 = time.time() - start 
-
-            # perform naive summing out and measure run time
+            
+            # Perform naive summing out and measure run time
             start = time.time()
             # Multiply all CPTs
             factors = list(bn.bn.get_all_cpts().keys())
@@ -52,17 +51,28 @@ def run(exp_type: int)->None:
             # Sum out all variables
             [chain(joint_pr, i, to_eliminate[i], bn.marginalize) for i in range(len(to_eliminate))]
             runtime_2 = time.time() - start
-        else:
+        elif exp_type == 2:
             # measure time for min-fill
+            ordering = bn.ordering("f", to_eliminate)
             start = time.time()
-            bn.elim_var(bn.ordering("f", to_eliminate))
+            bn.elim_var(ordering)
             runtime_1 = time.time() - start 
             #measure time for min-degree
+            ordering = bn.ordering("d", to_eliminate)
             start = time.time()
-            bn.elim_var(bn.ordering("d", to_eliminate))
+            bn.elim_var(ordering)
+            runtime_2 = time.time() - start 
+        else:
+            start = time.time()
+            ordering = bn.ordering("f", to_eliminate)
+            runtime_1 = time.time() - start 
+
+            start = time.time()
+            ordering = bn.ordering("d", to_eliminate)
             runtime_2 = time.time() - start 
 
-        # save results (run time) in csv
+
+        # Save results (run time) in csv
         writer.writerow([runtime_1, runtime_2,node_count, edge_count])
 
 if __name__== "__main__":
