@@ -18,7 +18,7 @@ def run(exp_type: int)->None:
         If anything else given then 1, min-fill versus min-degree.
     """
     # open file for results
-    f = open('../results/exp2_v.csv', 'w')
+    f = open('../results/exp2_v_2.csv', 'w')
 
     writer = csv.writer(f)
     if exp_type == 1:
@@ -27,9 +27,9 @@ def run(exp_type: int)->None:
         writer.writerow(["min-fill", "min-degree", "node count", "edge count"])
 
     # loop through all files
-    for file in os.listdir("../test_cases/experiment/"):
+    for file in os.listdir("../test_cases/experiment_used/"):
         print(file)
-        bn = BNReasoner("../test_cases/experiment/" + file)
+        bn = BNReasoner("../test_cases/experiment_used/" + file)
         counts = re.split("[E N]", file)
         print(counts)
         node_count = counts[0]
