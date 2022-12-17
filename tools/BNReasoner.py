@@ -353,5 +353,9 @@ class BNReasoner:
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
 
 if __name__ == "__main__":
-    bn = BNReasoner("testing/earthquake.BIFXML")
-    bn.bn.draw_structure()
+    bn = BNReasoner("test_cases/testing/winter.BIFXML")
+    #bn.bn.draw_structure()
+    a = bn.m_a_p(['Rainbow?'],{'Happy?': True})
+    print(a)
+    a = bn.m_p_e({'Unhappy?': True})
+    a.to_csv('mpe.csv')
