@@ -8,6 +8,7 @@ from pingouin import ttest, wilcoxon, homoscedasticity, normality
 import seaborn as sns
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 
 
@@ -62,16 +63,16 @@ def testing(file):
     print(wilcoxon(data[exp_1], data[exp_2]))
 
     # boxplot
-    plot = sns.boxplot(data=data.drop(["edge count", "node count"], axis = 1), saturation=0.05, showfliers = True, palette = "dark", orient="v")
+    plt.subplots(figsize = ( 6 , 4 ))
+    sns.set(font_scale=1)
+    plot = sns.boxplot(data=data.drop(["edge count", "node count"], axis = 1), saturation=0.8, showfliers = True, palette = "muted", orient="v")
     plot.set(yscale = "log")
-    # plot.set_title("Run time of ordering function comparing min-fill and min-degree")
-    plot.set_title("Run time of variable elimination compared to naive summing out")
-
+    plt.ylabel('runtime (s)')
     fig = plot.get_figure()
     fig.savefig("boxplot.png")
 
 ################################################################################################################################################### 
-    
+
 def regression (file, dependent, independent, transform):
     """_summary_
 
@@ -86,8 +87,8 @@ def regression (file, dependent, independent, transform):
     # # perform linear regression 
 
     # remove where edges are 0 (for regression with amount of edges) or only keep where edges are 0 (for regression with amount of nodes)
-    if independent == "edge count":
-        data = data[data[independent] != 0]
+    if independent == ["edge count"]:
+        data = data[data["node count"] == 15]
     elif independent == "node count":
         data = data[data[independent] == 0]
     
@@ -98,10 +99,12 @@ def regression (file, dependent, independent, transform):
         data[dependent] = np.log(data[dependent])
 
     # defining the dependent and independent variables
-    xtrain = data[[independent]]
+    xtrain = data[independent]
     xtrain = sm.add_constant(xtrain)
-    ytrain = data[[dependent]]
+    ytrain = data[dependent]
 
+    print(xtrain)
+    print(ytrain)
     # regression
     log_reg = sm.OLS(ytrain, xtrain).fit()
     print(log_reg.summary())
@@ -109,19 +112,19 @@ def regression (file, dependent, independent, transform):
     # graph model (predictions versus actual data)
 
     # what to plot
-    predicted_counts = data[independent]
+    predicted_counts = data["edge count"]
     actual_counts = ytrain
 
-    # graph
     plt.clf()
     fig = plt.figure()
-    fig.set_size_inches(8,6)
-    fig.suptitle('The effect of the number of edges on the runtime of variable elimination (min-degree)')
+    fig.set_size_inches(15,7)
+    fig.suptitle(f"The effect of the number of edges on the runtime of variable elimination ({dependent})", size = 20)
     plt.scatter(x=predicted_counts, y=actual_counts, marker='.')
-    plt.xlabel('Amount of edges')
-    plt.ylabel('runtime variable elimination (s)')
+    plt.xlabel('Amount of edges', size = 15)
+    plt.ylabel('runtime variable elimination (s)', size = 15)
     plt.savefig("scatter.png")
 
+
 if __name__== "__main__":
-    testing("exp2_v.csv", "exp2_v_test.csv")
-    regression("exp2_v.csv", "min-fill", "node count", transform = True)
+    # testing("exp2_v.csv")
+    regression("exp2_v_2.csv", "min-fill", ["edge count"], transform = False)
