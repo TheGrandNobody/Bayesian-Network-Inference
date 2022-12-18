@@ -324,7 +324,3 @@ class BNReasoner:
         """
         return self.m_a_p([variable for variable in self.bn.get_all_variables() if variable not in evidence], evidence).\
           assign(**{f"ext. factor {k}":v for k, v in evidence.items()})
-
-if __name__ == "__main__":
-    bn = BNReasoner("test_cases/experiment/15N14E.BIFXML")
-    bn.bn.draw_structure()

@@ -28,7 +28,8 @@ To load a BN, one must first load a .BIFXML file using a BNReasoner object. Then
 ```
 python3 unit_test/unit.py
 ```
-To generate CPTs, you must first edit the path, number of files and edge/node parameters in *cpt_generator.py*. Setting only the edge parameter to True will keep a constant number of nodes equal to the NUM_NODES parameter and gradually increase the number. Setting only the nodes parameter to True will create CPTs where all nodes are independent, but gradually increase per file. Setting both parameters to True will increase both nodes and edges gradually. 
+To generate CPTs, you must first edit the path, number of files and edge/node parameters in *cpt_generator.py*. Setting only the edge parameter to True will keep a constant number of nodes equal to the NUM_NODES parameter and gradually increase the number. Setting only the nodes parameter to True will create CPTs where all nodes are independent, but gradually increase per file. Setting both parameters to True will increase both nodes and edges gradually. Setting the pascal parameter to true will increase the number of edges according to the inner numbers of Pascal's triangle. Setting the div parameter to true will change the number of root nodes to half of the number of nodes.
+```
 
 For any given number of nodes __*n*__, the number of edges increases either linearly with __*n*__, or accordingly with the inner numbers of Pascal's triangle, determined by the formula:
 
